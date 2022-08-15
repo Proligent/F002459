@@ -572,7 +572,7 @@ namespace F002459
         public bool QLIBDownloadQcnFileV2(UInt32 hHandle, string strQCNFilePath, string strQCNFileName, ref string strErrorMessage)
         {
             strErrorMessage = "";
-            byte bResult = 0;
+            //byte bResult = 0;
             bool bRes = false;
             string strQCNFilePathName = "";
 
@@ -632,6 +632,7 @@ namespace F002459
                 }
 
                 #endregion
+
             }
             catch (Exception ex)
             {

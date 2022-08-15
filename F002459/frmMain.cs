@@ -119,7 +119,6 @@ namespace F002459
         public frmMain()
         {
             InitializeComponent();
-
             CollapseMenu(true);
 
             // Form
@@ -142,11 +141,11 @@ namespace F002459
 
             if (m_st_OptionData.TestMode == "1")
             {
-                this.Text = Program.g_str_ToolNumber + " : " + Program.g_str_ToolRev + " [Auto Test] " + m_st_MCFData.SKU + " " + m_st_MESData.EID + " " + m_st_MESData.WorkOrder;
+                lblTitleBar.Text = Program.g_str_ToolNumber + " : " + Program.g_str_ToolRev + " [Auto Test] "   + m_st_MCFData.SKU + " " + m_st_MESData.EID + " " + m_st_MESData.WorkOrder;
             }
             else
             {
-                this.Text = Program.g_str_ToolNumber + " : " + Program.g_str_ToolRev + " [Manual Test] " + m_st_MCFData.SKU + " " + m_st_MESData.EID + " " + m_st_MESData.WorkOrder;
+                lblTitleBar.Text = Program.g_str_ToolNumber + " : " + Program.g_str_ToolRev + " [Manual Test] " + m_st_MCFData.SKU + " " + m_st_MESData.EID + " " + m_st_MESData.WorkOrder;
             }
 
             return;
@@ -155,7 +154,6 @@ namespace F002459
         private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
         {
             bgFlashWorkerCancel();
-
             KillQPST();
 
             if (m_st_OptionData.TestMode == "1")
@@ -3353,6 +3351,12 @@ namespace F002459
                     strErrorMessage = "File not exist." + str_FilePath;
                     return false;
                 }
+
+                #region DAQ
+
+                m_st_OptionData.DAQDevice = "";
+
+                #endregion
 
                 #region TestMode
 

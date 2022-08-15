@@ -41,7 +41,7 @@
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
             this.label1.Location = new System.Drawing.Point(25, 100);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(52, 24);
+            this.label1.Size = new System.Drawing.Size(68, 29);
             this.label1.TabIndex = 0;
             this.label1.Text = "SKU:";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -51,13 +51,13 @@
             this.textBoxSKU.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
             this.textBoxSKU.Location = new System.Drawing.Point(102, 100);
             this.textBoxSKU.Name = "textBoxSKU";
-            this.textBoxSKU.Size = new System.Drawing.Size(272, 29);
+            this.textBoxSKU.Size = new System.Drawing.Size(272, 34);
             this.textBoxSKU.TabIndex = 1;
             this.textBoxSKU.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textBoxSKU_KeyDown);
             // 
             // btnOK
             // 
-            this.btnOK.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
+            this.btnOK.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnOK.Location = new System.Drawing.Point(102, 217);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(83, 49);
@@ -68,7 +68,7 @@
             // 
             // btnCancel
             // 
-            this.btnCancel.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
+            this.btnCancel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnCancel.Location = new System.Drawing.Point(198, 217);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(83, 49);
@@ -79,7 +79,7 @@
             // 
             // btnSetup
             // 
-            this.btnSetup.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F);
+            this.btnSetup.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSetup.Location = new System.Drawing.Point(291, 217);
             this.btnSetup.Name = "btnSetup";
             this.btnSetup.Size = new System.Drawing.Size(83, 49);
@@ -90,9 +90,9 @@
             // 
             // frmMCF
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 21F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(379, 278);
+            this.ClientSize = new System.Drawing.Size(385, 278);
             this.Controls.Add(this.btnSetup);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOK);
