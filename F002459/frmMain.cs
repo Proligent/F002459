@@ -8,6 +8,9 @@ using System.Windows.Forms;
 using F002459.Common;
 using F002459.Forms;
 using F002459.Properties;
+using System.Diagnostics;
+using Newtonsoft.Json;
+using SmartFactory.ExternalDLL;
 
 namespace F002459
 {
@@ -20,6 +23,9 @@ namespace F002459
             // Option
             public string TestMode;
             public string DAQDevice;
+            public string Area_Location;
+            public string MES_Enable;
+            public string MES_Station;
             public string PLCIP;
             public string PLCPort;
             public int DB_Slot1_ReadDB;
@@ -30,10 +36,18 @@ namespace F002459
             public int DB_Slot3_WriteDB;
             public int DB_Slot4_ReadDB;
             public int DB_Slot4_WriteDB;
-            public string Area_Location;
-            public string MES_Enable;
-            public string MES_StationName;
 
+            // Setup
+            public string ADBDeviceName;
+            public string QDLoaderPortName;
+            public string DeviceAddress_Panel1;
+            public string DeviceAddress_Panel2;
+            public string DeviceAddress_Panel3;
+            public string DeviceAddress_Panel4;        
+        }
+
+        private struct ModelOption
+        {
             // QCN
             public string QCNFilePath;
             public string QCNFileSize;
@@ -49,33 +63,31 @@ namespace F002459
             public string MDCSPreStationDeviceName;
             public string MDCSPreStationVarName;
             public string MDCSPreStationVarValue;
-
-            // Setup
-            public string DeviceAddress_Panel1;
-            public string DeviceAddress_Panel2;
-            public string DeviceAddress_Panel3;
-            public string DeviceAddress_Panel4;
-            public string ADBDeviceName;
-            public string QDLoaderPortName;
         }
 
-        private struct MCFData
+        #region Obsolete
+        //private struct MCFData
+        //{
+        //    public string SKU;
+        //}
+
+        //private struct MESData
+        //{
+        //    public string EID;
+        //    public string WorkOrder;
+        //}
+        #endregion
+
+        private struct UnitDeviceInfo
         {
+            public string Panel;    
+            public string SN;
             public string SKU;
-        }
-
-        private struct MESData
-        {
+            public string Model;
             public string EID;
             public string WorkOrder;
-        }
-
-        private struct UnitDevice
-        {
-            public string Panel;
-            public string PhysicalAddress;
-            public string SN;
             public string Status;
+            public string PhysicalAddress;
         }
 
         #endregion
@@ -83,11 +95,12 @@ namespace F002459
         #region Variable
 
         private bool m_bCollapse = true;
-        private string m_str_Model = "";
+        //private string m_str_Model = "";    
+        //private MCFData m_st_MCFData = new MCFData();
+        //private MESData m_st_MESData = new MESData();
         private OptionData m_st_OptionData = new OptionData();
-        private MCFData m_st_MCFData = new MCFData();
-        private MESData m_st_MESData = new MESData();
-        private Dictionary<string, UnitDevice> m_dic_UnitDevice = new Dictionary<string, UnitDevice>();
+        private Dictionary<string, UnitDeviceInfo> m_dic_UnitDevice = new Dictionary<string, UnitDeviceInfo>();
+        private Dictionary<string, ModelOption> m_dic_ModelOption = new Dictionary<string, ModelOption>();
         private Dictionary<string, TestSaveData> m_dic_TestSaveData = new Dictionary<string, TestSaveData>();
         private Dictionary<string, bool> m_dic_TestStatus = new Dictionary<string, bool>();      // true:Running false:Not Running
         private Dictionary<string, UInt32> m_dic_TestHandle = new Dictionary<string, UInt32>();  // true:Running false:Not Running
@@ -99,19 +112,19 @@ namespace F002459
         private const string PANEL_4 = "4";
         private const string STATUS_CONNECTED = "Connected";
         private const string STATUS_DISCONNECTED = "Not Connected";
-        private const string STATUS_FLASHING = "Ongoing";
+        private const string STATUS_ONGOING = "Ongoing";
         private const string STATUS_SUCCESSED = "PASS";
         private const string STATUS_FAILED = "FAIL";
 
         private clsQMSL m_cls_QMSL = new clsQMSL();
-        private object QPSTSyncLocker = new object();
+        private static readonly object QPSTSyncLocker = new object();
+        private static readonly object m_obj_SaveLogLocker = new object();
 
         private clsCPLCDave m_obj_PLC = null;
         private System.Threading.Timer m_timer_WatchDog = null;
         private bool m_b_PLCRuning = false;
         private int m_i_WatchDog = 0;
-        private readonly object m_obj_SaveLogLocker = new object();
-
+        
         #endregion
 
         #region Form
@@ -125,14 +138,13 @@ namespace F002459
             this.Text = string.Empty;
             this.ControlBox = false;
             this.DoubleBuffered = true;
-            //this.MaximizedBounds = Screen.FromHandle(this.Handle).WorkingArea;
             this.MaximizedBounds = Screen.PrimaryScreen.WorkingArea;
 
         }
 
         private void frmMain_Load(object sender, EventArgs e)
         {
-            this.Text = Program.g_str_ToolNumber + " : " + Program.g_str_ToolRev;
+            lblTitleBar.Text = Program.g_str_ToolNumber + " : " + Program.g_str_ToolRev;
 
             if (InitRun() == false)
             {
@@ -141,11 +153,13 @@ namespace F002459
 
             if (m_st_OptionData.TestMode == "1")
             {
-                lblTitleBar.Text = Program.g_str_ToolNumber + " : " + Program.g_str_ToolRev + " [Auto Test] "   + m_st_MCFData.SKU + " " + m_st_MESData.EID + " " + m_st_MESData.WorkOrder;
+                //lblTitleBar.Text = Program.g_str_ToolNumber + " : " + Program.g_str_ToolRev + " [Auto Test] "   + m_st_MCFData.SKU + " " + m_st_MESData.EID + " " + m_st_MESData.WorkOrder;
+                lblTitleBar.Text = Program.g_str_ToolNumber + " : " + Program.g_str_ToolRev + "[Auto Test]";
             }
             else
             {
-                lblTitleBar.Text = Program.g_str_ToolNumber + " : " + Program.g_str_ToolRev + " [Manual Test] " + m_st_MCFData.SKU + " " + m_st_MESData.EID + " " + m_st_MESData.WorkOrder;
+                //lblTitleBar.Text = Program.g_str_ToolNumber + " : " + Program.g_str_ToolRev + " [Manual Test] " + m_st_MCFData.SKU + " " + m_st_MESData.EID + " " + m_st_MESData.WorkOrder;
+                lblTitleBar.Text = Program.g_str_ToolNumber + " : " + Program.g_str_ToolRev + "[Manual Test]";
             }
 
             return;
@@ -579,7 +593,7 @@ namespace F002459
                         // 不同产品
                         #region STATUS_CONNECTED
 
-                        UnitDevice stUnit = new UnitDevice();
+                        UnitDeviceInfo stUnit = new UnitDeviceInfo();
                         stUnit.Panel = strPanel;
                         stUnit.PhysicalAddress = strPhysicalAddress;
                         stUnit.SN = strSN;
@@ -599,7 +613,6 @@ namespace F002459
                 else
                 {
                     m_dic_COMPort[strPanel] = "";
-
                     if (m_List_SN.Count > 1)
                     {
                         DisplayMessage("Panel " + strPanel + " mmonitor more unit:" + m_List_SN.Count);
@@ -632,13 +645,12 @@ namespace F002459
                     else if (strStatus == "1")
                     {
                         m_dic_COMPort[strPanel] = "";
-
                         //m_dic_TestStatus[strPanel] = false;
                         DisplayUnitLog(strPanel, "Unit disconnect ......");
                     }
                     else
                     {
-                        UnitDevice stUnit = new UnitDevice();
+                        UnitDeviceInfo stUnit = new UnitDeviceInfo();
                         stUnit.Panel = m_dic_UnitDevice[strPanel].Panel;
                         stUnit.PhysicalAddress = m_dic_UnitDevice[strPanel].PhysicalAddress;
                         stUnit.SN = m_dic_UnitDevice[strPanel].SN;
@@ -741,10 +753,14 @@ namespace F002459
                 strDeviceName = m_st_OptionData.ADBDeviceName;
                 strPhysicalAddress = m_dic_UnitDevice[strPanel].PhysicalAddress;
 
-                UnitDevice stUnit1 = new UnitDevice();
+                UnitDeviceInfo stUnit1 = new UnitDeviceInfo();
                 stUnit1.Panel = strPanel;
                 stUnit1.PhysicalAddress = strPhysicalAddress;
                 stUnit1.SN = "";
+                stUnit1.SKU = "";
+                stUnit1.Model = "";
+                stUnit1.EID = "";
+                stUnit1.WorkOrder = "";
                 stUnit1.Status = "0";
                 m_dic_UnitDevice[strPanel] = stUnit1;
 
@@ -782,7 +798,7 @@ namespace F002459
 
                         m_dic_COMPort[strPanel] = "";
 
-                        UnitDevice stUnit = new UnitDevice();
+                        UnitDeviceInfo stUnit = new UnitDeviceInfo();
                         stUnit.Panel = strPanel;
                         stUnit.PhysicalAddress = strPhysicalAddress;
                         stUnit.SN = strSN;
@@ -792,12 +808,10 @@ namespace F002459
                         DisplayUnit(strPanel, strSN, Color.White);
                         DisplayUnitStatus(strPanel, STATUS_CONNECTED, Color.MediumSpringGreen);
 
-                        bRes = true;
-
                         RunFlashWorker(strPanel);   // Start RunTest
 
                         strErrorMessage = "";
-                        //bRes = true;    maybe bug, sometimes not execute
+                        bRes = true;    
                         break;
 
                         #endregion
@@ -818,8 +832,7 @@ namespace F002459
             }
             catch (Exception ex)
             {
-                strErrorMessage = "Failed to monitor device exception:" + ex.Message;
-                string strr = ex.Message;
+                strErrorMessage = "Failed to monitor device exception:" + ex.Message; 
                 return false;
             }
 
@@ -841,7 +854,7 @@ namespace F002459
                 strDeviceName = m_st_OptionData.ADBDeviceName;
                 strPhysicalAddress = m_dic_UnitDevice[strPanel].PhysicalAddress;
 
-                UnitDevice stUnit1 = new UnitDevice();
+                UnitDeviceInfo stUnit1 = new UnitDeviceInfo();
                 stUnit1.Panel = strPanel;
                 stUnit1.PhysicalAddress = strPhysicalAddress;
                 stUnit1.SN = "";
@@ -908,7 +921,7 @@ namespace F002459
 
                 m_dic_COMPort[strPanel] = "";
 
-                UnitDevice stUnit = new UnitDevice();
+                UnitDeviceInfo stUnit = new UnitDeviceInfo();
                 stUnit.Panel = strPanel;
                 stUnit.PhysicalAddress = strPhysicalAddress;
                 stUnit.SN = strSN;
@@ -1087,17 +1100,118 @@ namespace F002459
                 double dTotalTestTime = 0;
                 long startTime = clsUtil.StartTimeInTicks();
 
-                #region Init
-
-                this.Invoke((MethodInvoker)delegate { DisplayUnitStatus(strPanel, STATUS_FLASHING, Color.YellowGreen); });
-                UnitDevice stUnit = m_dic_UnitDevice[strPanel];
-                stUnit.Status = "1";
-                m_dic_UnitDevice[strPanel] = stUnit;
-
-                InitMDCSData(strPanel);
-
                 this.Invoke((MethodInvoker)delegate { ClearUnitLog(strPanel); });
                 this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Start Test Time:" + System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")); });
+
+                #region Init
+
+                this.Invoke((MethodInvoker)delegate { DisplayUnitStatus(strPanel, STATUS_ONGOING, Color.YellowGreen); });
+                UnitDeviceInfo stUnit = m_dic_UnitDevice[strPanel];
+                stUnit.Status = "1";
+                m_dic_UnitDevice[strPanel] = stUnit;
+       
+                InitMDCSData(strPanel);
+                InitModelOptionData(strPanel);
+
+                #endregion
+
+                #region Get SKU Property
+
+                if (bRes == true)
+                {
+                    bRes = TestGetSKU(strPanel, ref strErrorMessage);
+                    if (bRes == false)
+                    {
+                        bUpdateMDCS = false;
+                        bRes = false;
+                        strErrorMessage = "Failed to get SKU property." + strErrorMessage;
+                    }
+                    else
+                    {
+                        bUpdateMDCS = true;
+                        bRes = true;
+                    }
+                }
+
+                #endregion
+
+                #region Get WorkOrder Property
+                // Remark: WorkOrder sometimes maybe not written in property, get from scansheet.
+                if (bRes == true)
+                {
+                    bRes = TestGetWorkOrder(strPanel, ref strErrorMessage);
+                    if (bRes == false)
+                    {
+                        bUpdateMDCS = false;
+                        bRes = false;
+                        strErrorMessage = "Failed to get WorkOrder property." + strErrorMessage;
+                    }
+                    else
+                    {
+                        bUpdateMDCS = true;
+                        bRes = true;
+                    }
+                }
+
+                #endregion
+
+                #region Get EID Property
+
+                if (bRes == true)
+                {
+                    bRes = TestGetEID(strPanel, ref strErrorMessage);
+                    if (bRes == false)
+                    {
+                        bUpdateMDCS = false;
+                        bRes = false;
+                        strErrorMessage = "Failed to get EID property." + strErrorMessage;
+                    }
+                    else
+                    {
+                        bUpdateMDCS = true;
+                        bRes = true;
+                    }
+                }
+
+                #endregion
+
+                #region Read Model_Option.ini
+
+                if (bRes == true)
+                {
+                    bRes = TestReadModelOption(strPanel, ref strErrorMessage);
+                    if (bRes == false)
+                    {
+                        bUpdateMDCS = false;
+                        bRes = false;
+                        strErrorMessage = "Failed to read Model_Option.ini." + strErrorMessage;
+                    }
+                    else
+                    {
+                        bUpdateMDCS = true;
+                        bRes = true;
+                    }
+                }
+
+                #endregion
+
+                #region Check MES Data
+
+                if (bRes == true)
+                {
+                    bRes = TestCheckMESData(strPanel, ref strErrorMessage);
+                    if (bRes == false)
+                    {
+                        bUpdateMDCS = false;
+                        bRes = false;
+                        strErrorMessage = "Failed to check MES data." + strErrorMessage;
+                    }
+                    else
+                    {
+                        bUpdateMDCS = true;
+                        bRes = true;
+                    }
+                }
 
                 #endregion
 
@@ -1153,8 +1267,8 @@ namespace F002459
                 objSaveData.TestRecord.ToolNumber = Program.g_str_ToolNumber;
                 objSaveData.TestRecord.ToolRev = Program.g_str_ToolRev;
                 objSaveData.TestRecord.SN = m_dic_UnitDevice[strPanel].SN;
-                objSaveData.TestRecord.Model = m_str_Model;
-                objSaveData.TestRecord.SKU = m_st_MCFData.SKU;
+                objSaveData.TestRecord.Model = m_dic_UnitDevice[strPanel].Model;
+                objSaveData.TestRecord.SKU = m_dic_UnitDevice[strPanel].SKU;
                 objSaveData.TestRecord.TestTotalTime = dTotalTestTime;
 
                 if (bRes == true)
@@ -1176,59 +1290,18 @@ namespace F002459
 
                 #endregion
 
-                #region Upload MES
-
-                if (m_st_OptionData.MES_Enable == "1")
-                {
-                    string strTempErrorMsg = "";
-                    bUploadMES = MESUploadData(objSaveData, ref strTempErrorMsg);
-                    if (bUploadMES == false)
-                    {
-                        bUploadMES = MESUploadData(objSaveData, ref strTempErrorMsg);
-                    }
-                    if (bUploadMES == false)
-                    {
-                        this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Upload MES Fail." + strTempErrorMsg); });
-
-                        if (objSaveData.TestResult.TestPassed == true)
-                        {
-                            objSaveData.TestResult.TestPassed = false;
-                            objSaveData.TestResult.TestFailCode = 2050;
-                            objSaveData.TestResult.TestFailMessage = "Failed to upload MES.";
-                            objSaveData.TestResult.TestStatus = "";
-                            m_dic_TestSaveData[strPanel] = objSaveData;
-                        }
-                    }
-                    else
-                    {
-                        this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Upload MES Successfully."); });
-                    }
-
-                    if (bUploadMES == false)
-                    {
-                        bRes = false;
-                    }
-                }
-
-                #endregion
-
                 #region Save MDCS
 
-                if (m_st_OptionData.MDCSEnable == "1")
+                if (m_dic_ModelOption[strPanel].MDCSEnable == "1")
                 {
                     if (bUpdateMDCS == true)
                     {
                         bool bSaveMDCS = false;
-                        bSaveMDCS = SaveMDCS(objSaveData);
-
-                        #region Obsolete
-
-                        //if (bSaveMDCS == false)
-                        //{
-                        //    bSaveMDCS = SaveMDCS(objSaveData);
-                        //}
-
-                        #endregion
+                        bSaveMDCS = SaveMDCS(strPanel, objSaveData);
+                        if (bSaveMDCS == false)
+                        {
+                            bSaveMDCS = SaveMDCS(strPanel, objSaveData);
+                        }
 
                         if (bSaveMDCS == false)
                         {
@@ -1261,6 +1334,58 @@ namespace F002459
 
                 #endregion
 
+
+                #region Upload MES
+
+                if (m_st_OptionData.MES_Enable == "1")
+                {
+                    string strTempErrorMsg = "";
+                    bool bPassFailFlag = false;
+                    string strEID = m_dic_UnitDevice[strPanel].EID;
+                    string strStation = m_st_OptionData.MES_Station;
+                    string strWorkOrder = m_dic_UnitDevice[strPanel].WorkOrder;
+                    string strSN = m_dic_UnitDevice[strPanel].SN;
+
+                    if (objSaveData.TestResult.TestPassed == true)
+                    {
+                        bPassFailFlag = true;
+                    }
+                    else
+                    {
+                        bPassFailFlag = false;
+                    }
+
+                    bUploadMES = MESUploadData(strEID, strStation, strWorkOrder, strSN, bPassFailFlag, ref strTempErrorMsg);
+                    if (bUploadMES == false)
+                    {
+                        bUploadMES = MESUploadData(strEID, strStation, strWorkOrder, strSN, bPassFailFlag, ref strTempErrorMsg);
+                    }
+                    if (bUploadMES == false)
+                    {
+                        this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Upload MES Fail." + strTempErrorMsg); });
+
+                        if (objSaveData.TestResult.TestPassed == true)
+                        {
+                            objSaveData.TestResult.TestPassed = false;
+                            objSaveData.TestResult.TestFailCode = 2050;
+                            objSaveData.TestResult.TestFailMessage = "Failed to upload MES.";
+                            objSaveData.TestResult.TestStatus = "";
+                            m_dic_TestSaveData[strPanel] = objSaveData;
+                        }
+                    }
+                    else
+                    {
+                        this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Upload MES Successfully."); });
+                    }
+
+                    if (bUploadMES == false)
+                    {
+                        bRes = false;
+                    }
+                }
+
+                #endregion
+              
                 #region Save Test Report
 
                 this.Invoke((MethodInvoker)delegate { SaveUnitTestReport(strPanel); });
@@ -1309,14 +1434,14 @@ namespace F002459
                 if (bRes == true)
                 {
                     this.Invoke((MethodInvoker)delegate { DisplayUnitStatus(strPanel, STATUS_SUCCESSED, Color.Green); });
-                    UnitDevice stUnit1 = m_dic_UnitDevice[strPanel];
+                    UnitDeviceInfo stUnit1 = m_dic_UnitDevice[strPanel];
                     stUnit1.Status = "P";
                     m_dic_UnitDevice[strPanel] = stUnit1;
                 }
                 else
                 {
                     this.Invoke((MethodInvoker)delegate { DisplayUnitStatus(strPanel, STATUS_FAILED, Color.Red); });
-                    UnitDevice stUnit2 = m_dic_UnitDevice[strPanel];
+                    UnitDeviceInfo stUnit2 = m_dic_UnitDevice[strPanel];
                     stUnit2.Status = "F";
                     m_dic_UnitDevice[strPanel] = stUnit2;
                 }
@@ -1356,13 +1481,400 @@ namespace F002459
             return true;
         }
 
-        private bool TestCheckPreStationResult(string strPanel, ref string strErrorMessage)
+        private bool TestGetSKU(string strPanel, ref string strErrorMessage)
         {
             strErrorMessage = "";
 
             try
             {
-                if (m_st_OptionData.MDCSPreStationResultCheck == "1")
+                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Test Get SKU Property."); });
+
+                string strSKU = "";
+                string strModel = "";
+                if (GetSKUProperty(strPanel, ref strSKU, ref strErrorMessage) == false)
+                {
+                    return false;
+                }
+
+                int index = strSKU.IndexOf("-");
+                strModel = strSKU.Substring(0, index);
+
+                UnitDeviceInfo stUnit = m_dic_UnitDevice[strPanel];
+                stUnit.SKU = strSKU;
+                stUnit.Model = strModel;
+                m_dic_UnitDevice[strPanel] = stUnit;
+
+                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Get SKU: " + strSKU + "\r\n"); });
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestGetSKU Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TestGetWorkOrder(string strPanel, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+
+            try
+            {
+                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Test Get WorkOrder Property."); });
+
+                string strWorkOrder = "";
+                if (GetWorkOrderProperty(strPanel, ref strWorkOrder, ref strErrorMessage) == false)
+                {
+                    return false;
+                }
+
+                UnitDeviceInfo stUnit = m_dic_UnitDevice[strPanel];
+                stUnit.WorkOrder = strWorkOrder;
+                m_dic_UnitDevice[strPanel] = stUnit;
+
+                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Get WorkOrder: " + strWorkOrder + "\r\n"); });
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestGetWorkOrder Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TestGetEID(string strPanel, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+
+            try
+            {
+                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Test Get EID Property."); });
+
+                string strEID = "";
+                if (GetEIDProperty(strPanel, ref strEID, ref strErrorMessage) == false)
+                {
+                    return false;
+                }
+
+                UnitDeviceInfo stUnit = m_dic_UnitDevice[strPanel];
+                stUnit.EID = strEID;
+                m_dic_UnitDevice[strPanel] = stUnit;
+
+                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Get EID: " + strEID + "\r\n"); });
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestGetEID Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TestReadModelOption(string strPanel, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            string strOptionFileName = "";
+
+            try
+            {
+                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Test Read ModelOption.ini file."); });
+
+                string strSKU = m_dic_UnitDevice[strPanel].SKU;
+                string strModel = m_dic_UnitDevice[strPanel].Model;
+
+                if (strModel == "UL")
+                {
+                    strModel = "EDA56";
+                    strOptionFileName = Application.StartupPath + "\\" + strModel + "\\" + "UL_Option.ini";
+                }
+                else
+                {
+                    strOptionFileName = Application.StartupPath + "\\" + strModel + "\\" + strModel + "_Option.ini";
+                }
+
+                string filename = Path.GetFileName(strOptionFileName);
+                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Model_Option:" + filename); });
+   
+                #region Model_Option.ini
+       
+                if (ReadModelOptionFile(strPanel, strOptionFileName, ref strErrorMessage) == false)
+                {
+                    this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Failed to read model option.ini."); });
+                    return false;
+                }
+
+                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Read ModelOption.ini file success." + "\r\n"); });
+
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestGetEID Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TestCheckMESData(string strPanel, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+
+            try
+            {
+                string EID = m_dic_UnitDevice[strPanel].EID;
+                string StationName = m_st_OptionData.MES_Station;
+                string WorkOrder = m_dic_UnitDevice[strPanel].WorkOrder;
+
+                if (m_st_OptionData.MES_Enable == "1")
+                {
+                    this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Test Check MES Data."); });
+
+                    if (MESCheckData(EID, StationName, WorkOrder, ref strErrorMessage) == false)
+                    {
+                        this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Failed to check MES data." + "\r\n"); });
+                        return false;
+                    }
+                    else
+                    {
+                        this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Check MES data successful." + "\r\n"); });
+                    }
+                }
+                else
+                {
+                    this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Skip to check MES data." + "\r\n"); });
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestCheckMESData Exception:" + ex.Message;
+                return false;
+            }
+        }
+
+
+
+
+        private bool GetSKUProperty(string strPanel, ref string strSKU, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            strSKU = "";
+
+            try
+            {
+                bool bRes = false;
+                string strResult = "";
+                string strSN = m_dic_UnitDevice[strPanel].SN;
+                string strBatDir = Application.StartupPath + "\\" + "BAT";
+                string strBatFile = strBatDir + "\\" + "GetSKU.bat";
+                int iTimeout = 15 * 1000;
+                string strSearchResult = "SUCCESS";
+
+                if (File.Exists(strBatFile) == false)
+                {
+                    strErrorMessage = "Check file exist fail." + strBatFile;
+                    return false;
+                }
+
+                string strBatParameter = "";
+                strBatParameter = strSN;
+                for (int i = 0; i < 5; i++)
+                {
+                    strResult = "";
+                    bRes = ExcuteBat(strPanel, strBatDir, strBatFile, strBatParameter, iTimeout, strSearchResult, ref strResult, ref strErrorMessage);
+                    if (bRes == false)
+                    {
+                        bRes = false;
+                        Dly(10);
+                        continue;
+                    }
+
+                    bRes = true;
+                    break;
+                }
+                if (bRes == false)
+                {
+                    strErrorMessage = "Execute bat to get SKU fail.";
+                    return false;
+                }
+
+                // Truncate SKU      
+                int index = strResult.IndexOf("SKU:");
+                if (index != -1)
+                {
+                    strResult = strResult.Substring(index + 4);
+                    index = strResult.IndexOf("*");
+                    strSKU = strResult.Substring(0, index);
+                }
+
+                if (string.IsNullOrWhiteSpace(strSKU) || strSKU.IndexOf("-") == 0)
+                {
+                    strErrorMessage = "Get SKU format error !!!";
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "Get SKU exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool GetWorkOrderProperty(string strPanel, ref string strWorkOrder, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            strWorkOrder = "";
+
+            try
+            {
+                bool bRes = false;
+                string strResult = "";
+                string strSN = m_dic_UnitDevice[strPanel].SN;
+                string strBatDir = Application.StartupPath + "\\" + "BAT";
+                string strBatFile = strBatDir + "\\" + "GetWorkOrder.bat";
+                int iTimeout = 15 * 1000;
+                string strSearchResult = "SUCCESS";
+
+                if (File.Exists(strBatFile) == false)
+                {
+                    strErrorMessage = "Check file exist fail." + strBatFile;
+                    return false;
+                }
+
+                string strBatParameter = "";
+                strBatParameter = strSN;
+                for (int i = 0; i < 5; i++)
+                {
+                    strResult = "";
+                    bRes = ExcuteBat(strPanel, strBatDir, strBatFile, strBatParameter, iTimeout, strSearchResult, ref strResult, ref strErrorMessage);
+                    if (bRes == false)
+                    {
+                        bRes = false;
+                        Dly(10);
+                        continue;
+                    }
+
+                    bRes = true;
+                    break;
+                }
+                if (bRes == false)
+                {
+                    strErrorMessage = "Execute bat to get WorkOrder fail.";
+                    return false;
+                }
+
+                // Truncate WorkOrder   
+                int index = strResult.IndexOf("WorkOrder:");
+                if (index != -1)
+                {
+                    strResult = strResult.Substring(index + 10);
+                    index = strResult.IndexOf("*");
+                    strWorkOrder = strResult.Substring(0, index);
+                }
+
+                if (string.IsNullOrWhiteSpace(strWorkOrder))
+                {
+                    strErrorMessage = "Get WorkOrder is empty !!!";
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "Get WorkOrder exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool GetEIDProperty(string strPanel, ref string strEID, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            strEID = "";
+
+            try
+            {
+                bool bRes = false;
+                string strResult = "";
+                string strSN = m_dic_UnitDevice[strPanel].SN;
+                string strBatDir = Application.StartupPath + "\\" + "BAT";
+                string strBatFile = strBatDir + "\\" + "GetEID.bat";
+                int iTimeout = 15 * 1000;
+                string strSearchResult = "SUCCESS";
+
+                if (File.Exists(strBatFile) == false)
+                {
+                    strErrorMessage = "Check file exist fail." + strBatFile;
+                    return false;
+                }
+
+                string strBatParameter = "";
+                strBatParameter = strSN;
+                for (int i = 0; i < 5; i++)
+                {
+                    strResult = "";
+                    bRes = ExcuteBat(strPanel, strBatDir, strBatFile, strBatParameter, iTimeout, strSearchResult, ref strResult, ref strErrorMessage);
+                    if (bRes == false)
+                    {
+                        bRes = false;
+                        Dly(10);
+                        continue;
+                    }
+
+                    bRes = true;
+                    break;
+                }
+                if (bRes == false)
+                {
+                    strErrorMessage = "Execute bat to get EID fail.";
+                    return false;
+                }
+
+                int index = strResult.IndexOf("EID:");
+                if (index != -1)
+                {
+                    strResult = strResult.Substring(index + 4);
+                    index = strResult.IndexOf("*");
+                    strEID = strResult.Substring(0, index);
+                }
+
+                if (string.IsNullOrWhiteSpace(strEID))
+                {
+                    strErrorMessage = "Get EID is empty !!!";
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "Get strEID exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+    
+        #endregion
+
+        private bool TestCheckPreStationResult(string strPanel, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            string MDCSPreStationResultCheck = m_dic_ModelOption[strPanel].MDCSPreStationResultCheck;
+            string MDCSURL = m_dic_ModelOption[strPanel].MDCSURL;
+            string MDCSPreStationDeviceName = m_dic_ModelOption[strPanel].MDCSPreStationDeviceName;
+            string MDCSPreStationVarName = m_dic_ModelOption[strPanel].MDCSPreStationVarName;
+            string MDCSPreStationVarValue = m_dic_ModelOption[strPanel].MDCSPreStationVarValue;
+
+            try
+            {
+                if (MDCSPreStationResultCheck == "1")
                 {
                     this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Test Check Pre Station Result."); });
 
@@ -1374,15 +1886,15 @@ namespace F002459
                     }
                     string str_ErrorMessage = "";
                     clsMDCS obj_SaveMDCS = new clsMDCS();
-                    obj_SaveMDCS.ServerName = m_st_OptionData.MDCSURL;
-                    obj_SaveMDCS.DeviceName = m_st_OptionData.MDCSPreStationDeviceName;
+                    obj_SaveMDCS.ServerName = MDCSURL;
+                    obj_SaveMDCS.DeviceName = MDCSPreStationDeviceName;
                     obj_SaveMDCS.UseModeProduction = true;
 
                     bool bRes = false;
                     string strValue = "";
                     for (int i = 0; i < 10; i++)
                     {
-                        bRes = obj_SaveMDCS.GetMDCSVariable(m_st_OptionData.MDCSPreStationDeviceName, m_st_OptionData.MDCSPreStationVarName, str_SN, ref strValue, ref str_ErrorMessage);
+                        bRes = obj_SaveMDCS.GetMDCSVariable(MDCSPreStationDeviceName, MDCSPreStationVarName, str_SN, ref strValue, ref str_ErrorMessage);
                         if (bRes == false)
                         {
                             bRes = false;
@@ -1392,10 +1904,10 @@ namespace F002459
                         }
                         else
                         {
-                            if (strValue != m_st_OptionData.MDCSPreStationVarValue)
+                            if (strValue != MDCSPreStationVarValue)
                             {
                                 bRes = false;
-                                strErrorMessage = "Pre station:" + m_st_OptionData.MDCSPreStationDeviceName + " Compare value fail." + strValue;
+                                strErrorMessage = "Pre station:" + MDCSPreStationDeviceName + " Compare value fail." + strValue;
                                 Dly(1);
                                 continue;
                             }
@@ -1413,6 +1925,8 @@ namespace F002459
                     }
 
                     this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Test Check Pre Station Result successfully."); });
+                    
+                    
                     bRes = false;
                     String cmd = "";
                     String result = "";
@@ -1471,7 +1985,7 @@ namespace F002459
             string strPhysicalAddress = m_dic_UnitDevice[strPanel].PhysicalAddress;
             string strCOMPort = "";
             int iCOMPort = 0;
-            string strQCNFilePath = m_st_OptionData.QCNFilePath;
+            string strQCNFilePath = m_dic_ModelOption[strPanel].QCNFilePath;
             string strQCNFileName = "";
             string strIMEI = "";
             string strQCNFileSize = "";
@@ -1484,7 +1998,7 @@ namespace F002459
                 #region IsWWAN
 
                 DisplayMessage("Check SKU WWAN flag.");
-                if (IsWWAN() == false)
+                if (IsWWAN(strPanel) == false)
                 {
                     bRes = true;
                     strErrorMessage = "";
@@ -1523,7 +2037,7 @@ namespace F002459
                     return false;
                 }
                 iCOMPort = int.Parse(strCOMPort);
-                Dly(5);
+                Dly(5);  // ???
 
                 #endregion
 
@@ -1653,7 +2167,7 @@ namespace F002459
                     return false;
                 }
                 this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "QCN file size:" + strQCNFileSize + " kb."); });
-                if (int.Parse(strQCNFileSize) < int.Parse(m_st_OptionData.QCNFileSize))
+                if (int.Parse(strQCNFileSize) < int.Parse(m_dic_ModelOption[strPanel].QCNFileSize))
                 {
                     bRes = false;
                     strErrorMessage = "Failed to check QCN file size." + strQCNFileSize;
@@ -2650,8 +3164,8 @@ namespace F002459
                 objSaveData.TestRecord.ToolNumber = Program.g_str_ToolNumber;
                 objSaveData.TestRecord.ToolRev = Program.g_str_ToolRev;
                 objSaveData.TestRecord.SN = "";
-                objSaveData.TestRecord.Model = m_str_Model;
-                objSaveData.TestRecord.SKU = m_st_MCFData.SKU;
+                objSaveData.TestRecord.Model = "";
+                objSaveData.TestRecord.SKU = "";
                 objSaveData.TestRecord.IMEI = "";
                 objSaveData.TestRecord.TestTotalTime = 0;
 
@@ -2671,16 +3185,45 @@ namespace F002459
             return true;
         }
 
-        private bool SaveMDCS(TestSaveData objSaveData)
+        private bool InitModelOptionData(string strPanel)
         {
             try
             {
-                if (m_st_OptionData.MDCSEnable == "1")
+                ModelOption objModelOption = m_dic_ModelOption[strPanel];
+
+                objModelOption.QCNFilePath = "";
+                objModelOption.QCNFileSize = "";
+                objModelOption.MatrixWWANPos = 0;
+
+                objModelOption.MDCSEnable = "";
+                objModelOption.MDCSURL = "";
+                objModelOption.MDCSDeviceName = "";
+                objModelOption.MDCSPreStationResultCheck = "";
+                objModelOption.MDCSPreStationDeviceName = "";
+                objModelOption.MDCSPreStationVarName = "";
+                objModelOption.MDCSPreStationVarValue = "";
+
+                m_dic_ModelOption[strPanel] = objModelOption;
+            }
+            catch (Exception ex)
+            {
+                string strr = ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool SaveMDCS(string strPanel, TestSaveData objSaveData)
+        {
+            try
+            {
+                if (m_dic_ModelOption[strPanel].MDCSEnable == "1")
                 {
                     string str_ErrorMessage = "";
                     clsMDCS obj_SaveMDCS = new clsMDCS();
-                    obj_SaveMDCS.ServerName = m_st_OptionData.MDCSURL;
-                    obj_SaveMDCS.DeviceName = m_st_OptionData.MDCSDeviceName;
+                    obj_SaveMDCS.ServerName = m_dic_ModelOption[strPanel].MDCSURL;
+                    obj_SaveMDCS.DeviceName = m_dic_ModelOption[strPanel].MDCSDeviceName;
                     obj_SaveMDCS.UseModeProduction = true;
                     obj_SaveMDCS.p_TestData = objSaveData;
 
@@ -2740,114 +3283,123 @@ namespace F002459
 
         #region MES
 
-        private bool MESCheckData(ref string strErrorMessage)
+        public static bool MESCheckData(string strEID, string strStation, string strWorkOrder, ref string strErrorMessage)
         {
             strErrorMessage = "";
 
             try
             {
-                if (m_st_OptionData.MES_Enable == "1")
+                #region Check MES Data
+
+                if (strEID == "")
                 {
-                    UploadTestData.CheckData cd = new UploadTestData.CheckData();
-                    UploadTestData.Result result = new UploadTestData.Result();
+                    strErrorMessage = "Invalid EID.";
+                    return false;
+                }
+                if (strStation == "")
+                {
+                    strErrorMessage = "Invalid StationName.";
+                    return false;
+                }
+                if (strWorkOrder == "")
+                {
+                    strErrorMessage = "Invalid WorkOrder.";
+                    return false;
+                }
 
-                    cd.EID = m_st_MESData.EID;
-                    cd.StationName = m_st_OptionData.MES_StationName;
-                    cd.WorkOrder = m_st_MESData.WorkOrder;
+                #endregion
 
-                    #region Check
+                UploadData data = new UploadData()
+                {
+                    EID = strEID,
+                    StationName = strStation,
+                    WorkOrder = strWorkOrder
+                };
 
-                    if (m_st_MESData.EID == "")
-                    {
-                        strErrorMessage = "Invalid EID.";
-                        return false;
-                    }
-                    if (m_st_OptionData.MES_StationName == "")
-                    {
-                        strErrorMessage = "Invalid StationName.";
-                        return false;
-                    }
-                    if (m_st_MESData.WorkOrder == "")
-                    {
-                        strErrorMessage = "Invalid WorkOrder.";
-                        return false;
-                    }
-
-                    #endregion
-
-                    result = UploadTestData.LineDashboard.CheckTestValid(cd);
-                    if (result.code == 0)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        strErrorMessage = "code:" + result.code.ToString() + ",message:" + result.message;
-                        return false;
-                    }
+                Result result = LineDashboard.CheckTestValid(data);
+                if (result.code == 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    strErrorMessage = "FailCode: " + result.code.ToString() + ",  Message: " + result.message;
+                    return false;
                 }
             }
             catch (Exception ex)
             {
-                string strr = ex.Message;
-                strErrorMessage = "MESCheckData exception:" + ex.Message;
+                strErrorMessage = "MESCheckData Exception:" + ex.Message;
                 return false;
             }
-
-            return true;
         }
 
-        private bool MESUploadData(TestSaveData objSaveData, ref string strErrorMessage)
+        public static bool MESUploadData(string strEID, string strStation, string strWorkOrder, string strSN, bool bPassFailFlag, ref string strErrorMessage)
         {
             strErrorMessage = "";
+            string strResult = "";
 
             try
             {
-                if (m_st_OptionData.MES_Enable == "1")
+                #region Check MES Data
+
+                if (strEID == "")
                 {
-                    UploadTestData.UploadData ud = new UploadTestData.UploadData();
-                    UploadTestData.Result result = new UploadTestData.Result();
+                    strErrorMessage = "Invalid EID.";
+                    return false;
+                }
+                if (strStation == "")
+                {
+                    strErrorMessage = "Invalid StationName.";
+                    return false;
+                }
+                if (strWorkOrder == "")
+                {
+                    strErrorMessage = "Invalid WorkOrder.";
+                    return false;
+                }
+                if (strSN == "")
+                {
+                    strErrorMessage = "Invalid SN.";
+                    return false;
+                }
 
-                    ud.EID = m_st_MESData.EID;
-                    ud.StationName = m_st_OptionData.MES_StationName;
-                    ud.WorkOrder = m_st_MESData.WorkOrder;
-                    ud.SN = objSaveData.TestRecord.SN;
-                    ud.TestResult = "";
+                #endregion
 
-                    if (ud.SN == "")
-                    {
-                        strErrorMessage = "Failed to upload MES,invalid SN.";
-                        return false;
-                    }
-                    if (objSaveData.TestResult.TestPassed == true)
-                    {
-                        ud.TestResult = "PASS";
-                    }
-                    else
-                    {
-                        ud.TestResult = "FAIL:" + objSaveData.TestResult.TestFailMessage;
-                    }
+                if (bPassFailFlag == true)
+                {
+                    strResult = "PASS";
+                }
+                else
+                {
+                    strResult = "Failure";
+                }
 
-                    result = UploadTestData.LineDashboard.UploadTestValue(ud);
-                    if (result.code == 0)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        strErrorMessage = "code:" + result.code.ToString() + ",message:" + result.message;
-                        return false;
-                    }
+                UploadData data = new UploadData()
+                {
+                    EID = strEID,
+                    StationName = strStation,
+                    WorkOrder = strWorkOrder,
+                    SN = strSN,
+                    TestResult = strResult
+                };
+
+                Result result = LineDashboard.UploadTestValue(data);
+                if (result.code == 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    strErrorMessage = "Fail: code=" + result.code.ToString() + ", Message: " + result.message;
+                    return false;
                 }
             }
             catch (Exception ex)
             {
-                string strr = ex.Message;
-                strErrorMessage = "MESUploadData exception:" + ex.Message;
+                strErrorMessage = "MESUploadData Exception:" + ex.Message;
                 return false;
             }
-
-            return true;
         }
 
         #endregion
@@ -2986,7 +3538,6 @@ namespace F002459
                     {
                         // Monitor Device
                         bRunRes = MonitorDeviceByPhysicalAddress_AutoTest(strPanel, ref strErrorMessage);
-
                         if (bRunRes == false)
                         {
                             DisplayMessage("Panel:" + strPanel + " MonitorDevice Fail." + strErrorMessage);
@@ -2999,7 +3550,7 @@ namespace F002459
 
                     #endregion
 
-                    #region Update Status
+                    #region Update Status (Failed to detect device)
 
                     if (bRunRes == false)
                     {
@@ -3007,7 +3558,7 @@ namespace F002459
 
                         this.Invoke((MethodInvoker)delegate { DisplayUnitStatus(strPanel, STATUS_FAILED, Color.Red); });
 
-                        UnitDevice stUnit2 = m_dic_UnitDevice[strPanel];
+                        UnitDeviceInfo stUnit2 = m_dic_UnitDevice[strPanel];
                         stUnit2.Status = "F";
                         m_dic_UnitDevice[strPanel] = stUnit2;
 
@@ -3104,13 +3655,13 @@ namespace F002459
 
             #endregion
 
-            #region ScanMCF
+            #region ScanMCF (Obsolete)
 
-            DisplayMessage("Scan Sheet.");
-            if (ScanMCF() == false)
-            {
-                return false;
-            }
+            //DisplayMessage("Scan Sheet.");
+            //if (ScanMCF() == false)
+            //{
+            //    return false;
+            //}
 
             #endregion
 
@@ -3127,22 +3678,22 @@ namespace F002459
 
             #region Model_Option.ini
 
-            if (m_str_Model == "UL")
-            {
-                m_str_Model = "EDA56";
-                strOptionFileName = Application.StartupPath + "\\" + m_str_Model + "\\" + "UL_Option.ini";
-            }
-            else
-            {
-                strOptionFileName = Application.StartupPath + "\\" + m_str_Model + "\\" + m_str_Model + "_Option.ini";
-            }
-            DisplayMessage("Model option ini:" + strOptionFileName);
-            strErrorMessage = "";
-            if (ReadModelOptionFile(strOptionFileName, ref strErrorMessage) == false)
-            {
-                DisplayMessage("Failed to read model_option.ini file." + strErrorMessage);
-                return false;
-            }
+            //if (m_str_Model == "UL")
+            //{
+            //    m_str_Model = "EDA56";
+            //    strOptionFileName = Application.StartupPath + "\\" + m_str_Model + "\\" + "UL_Option.ini";
+            //}
+            //else
+            //{
+            //    strOptionFileName = Application.StartupPath + "\\" + m_str_Model + "\\" + m_str_Model + "_Option.ini";
+            //}
+            //DisplayMessage("Model option ini:" + strOptionFileName);
+            //strErrorMessage = "";
+            //if (ReadModelOptionFile(strOptionFileName, ref strErrorMessage) == false)
+            //{
+            //    DisplayMessage("Failed to read model_option.ini file." + strErrorMessage);
+            //    return false;
+            //}
 
             #endregion
 
@@ -3157,34 +3708,34 @@ namespace F002459
 
             #endregion
 
-            #region ScanMES
+            #region ScanMES (Obsolete)
 
-            if (m_st_OptionData.MES_Enable == "1")
-            {
-                DisplayMessage("MES input.");
-                if (ScanMES() == false)
-                {
-                    DisplayMessage("Failed to MES input.");
-                    return false;
-                }
-                DisplayMessage("EID:" + m_st_MESData.EID);
-                DisplayMessage("WorkOrder:" + m_st_MESData.WorkOrder);
-            }
+            //if (m_st_OptionData.MES_Enable == "1")
+            //{
+            //    DisplayMessage("MES input.");
+            //    if (ScanMES() == false)
+            //    {
+            //        DisplayMessage("Failed to MES input.");
+            //        return false;
+            //    }
+            //    DisplayMessage("EID:" + m_st_MESData.EID);
+            //    DisplayMessage("WorkOrder:" + m_st_MESData.WorkOrder);
+            //}
 
             #endregion
 
-            #region Check MES Data
+            #region Check MES Data (Obsolete)
 
-            if (m_st_OptionData.MES_Enable == "1")
-            {
-                DisplayMessage("MES check data.");
+            //if (m_st_OptionData.MES_Enable == "1")
+            //{
+            //    DisplayMessage("MES check data.");
 
-                if (MESCheckData(ref strErrorMessage) == false)
-                {
-                    DisplayMessage("Failed to MES check data." + strErrorMessage);
-                    return false;
-                }
-            }
+            //    if (MESCheckData(ref strErrorMessage) == false)
+            //    {
+            //        DisplayMessage("Failed to MES check data." + strErrorMessage);
+            //        return false;
+            //    }
+            //}
 
             #endregion
 
@@ -3248,61 +3799,61 @@ namespace F002459
             return true;
         }
 
-        private bool ScanMCF()
-        {
-            frmMCF frmMCF = new frmMCF();
-            DialogResult dlgResult = DialogResult.None;
-            dlgResult = frmMCF.ShowDialog();
-            if (dlgResult == DialogResult.No)
-            {
-                DisplayMessage("Scan sheet cancel.");
-                return false;
-            }
-            if (dlgResult == DialogResult.OK)
-            {
-                #region Setup
+        //private bool ScanMCF()
+        //{
+        //    frmMCF frmMCF = new frmMCF();
+        //    DialogResult dlgResult = DialogResult.None;
+        //    dlgResult = frmMCF.ShowDialog();
+        //    if (dlgResult == DialogResult.No)
+        //    {
+        //        DisplayMessage("Scan sheet cancel.");
+        //        return false;
+        //    }
+        //    if (dlgResult == DialogResult.OK)
+        //    {
+        //        #region Setup
 
-                frmSetupUSB frm = new frmSetupUSB();
-                frm.ShowDialog();
+        //        frmSetupUSB frm = new frmSetupUSB();
+        //        frm.ShowDialog();
 
-                #endregion
+        //        #endregion
 
-                return false;
-            }
+        //        return false;
+        //    }
 
-            m_st_MCFData.SKU = frmMCF.SKU;
-            DisplayMessage("SKU:" + m_st_MCFData.SKU);
+        //    m_st_MCFData.SKU = frmMCF.SKU;
+        //    DisplayMessage("SKU:" + m_st_MCFData.SKU);
 
-            string strModel = "";
-            if (GetModelBySKU(ref strModel) == false)
-            {
-                return false;
-            }
-            m_str_Model = strModel;
-            DisplayMessage("Model:" + m_str_Model);
+        //    string strModel = "";
+        //    if (GetModelBySKU(ref strModel) == false)
+        //    {
+        //        return false;
+        //    }
+        //    m_str_Model = strModel;
+        //    DisplayMessage("Model:" + m_str_Model);
 
-            return true;
-        }
+        //    return true;
+        //}
 
-        private bool ScanMES()
-        {
-            frmMES frmMES = new frmMES();
-            if (frmMES.ShowDialog() != DialogResult.Yes)
-            {
-                return false;
-            }
-            m_st_MESData.EID = frmMES.EID;
-            m_st_MESData.WorkOrder = frmMES.WorkOrder;
+        //private bool ScanMES()
+        //{
+        //    frmMES frmMES = new frmMES();
+        //    if (frmMES.ShowDialog() != DialogResult.Yes)
+        //    {
+        //        return false;
+        //    }
+        //    m_st_MESData.EID = frmMES.EID;
+        //    m_st_MESData.WorkOrder = frmMES.WorkOrder;
 
-            return true;
-        }
+        //    return true;
+        //}
 
-        private bool GetModelBySKU(ref string strModel)
+        private bool GetModelBySKU(string strPanel, ref string strModel)
         {
             try
             {
                 strModel = "";
-                string strSKU = m_st_MCFData.SKU;
+                string strSKU = m_dic_UnitDevice[strPanel].SKU;
                 int iIndex = strSKU.IndexOf("-");
                 strModel = strSKU.Substring(0, iIndex);
             }
@@ -3315,13 +3866,14 @@ namespace F002459
             return true;
         }
 
-        private bool IsWWAN()
+        private bool IsWWAN(string strPanel)
         {
             try
             {
                 string strWWAN = "";
-                string strSKU = m_st_MCFData.SKU;
-                strWWAN = strSKU.Substring(m_st_OptionData.MatrixWWANPos - 1, 1);
+                string strSKU = m_dic_UnitDevice[strPanel].SKU;
+                int MatrixWWANPos = m_dic_ModelOption[strPanel].MatrixWWANPos;
+                strWWAN = strSKU.Substring(MatrixWWANPos - 1, 1);
                 if (strWWAN != "1")
                 {
                     return false;
@@ -3369,6 +3921,35 @@ namespace F002459
 
                 #endregion
 
+                #region Area
+
+                m_st_OptionData.Area_Location = objIniFile.ReadString("Area", "Location");
+                if (m_st_OptionData.Area_Location == "")
+                {
+                    strErrorMessage = "Invalid Area_Location Value:" + m_st_OptionData.Area_Location;
+                    return false;
+                }
+
+                #endregion
+
+                #region MES
+
+                m_st_OptionData.MES_Enable = objIniFile.ReadString("MES", "Enable");
+                if ((m_st_OptionData.MES_Enable != "0") && (m_st_OptionData.MES_Enable != "1"))
+                {
+                    strErrorMessage = "Invalid MES Enable:" + m_st_OptionData.MES_Enable;
+                    return false;
+                }
+
+                m_st_OptionData.MES_Station = objIniFile.ReadString("MES", "StationName");
+                if (m_st_OptionData.MES_Station == "")
+                {
+                    strErrorMessage = "Invalid MES Station:" + m_st_OptionData.MES_Station;
+                    return false;
+                }
+
+                #endregion
+
                 #region PLC
 
                 m_st_OptionData.PLCIP = objIniFile.ReadString("PLC", "PLCIP");
@@ -3388,25 +3969,7 @@ namespace F002459
                 m_st_OptionData.DB_Slot4_WriteDB = objIniFile.ReadInt("DB_Slot4", "WriteDB");
 
                 #endregion
-
-                #region Area
-
-                m_st_OptionData.Area_Location = objIniFile.ReadString("Area", "Location");
-
-                #endregion
-
-                #region MES
-
-                m_st_OptionData.MES_Enable = objIniFile.ReadString("MES", "Enable");
-                if ((m_st_OptionData.MES_Enable != "0") && (m_st_OptionData.MES_Enable != "1"))
-                {
-                    strErrorMessage = "Invalid MES Enable:" + m_st_OptionData.MES_Enable;
-                    return false;
-                }
-
-                m_st_OptionData.MES_StationName = objIniFile.ReadString("MES", "StationName");
-
-                #endregion
+       
             }
             catch (Exception ex)
             {
@@ -3418,7 +3981,7 @@ namespace F002459
             return true;
         }
 
-        private bool ReadModelOptionFile(string strOptionFileName, ref string strErrorMessage)
+        private bool ReadModelOptionFile(string strPanel, string strOptionFileName, ref string strErrorMessage)
         {
             try
             {
@@ -3433,53 +3996,55 @@ namespace F002459
                     return false;
                 }
 
+                ModelOption objModelOption = m_dic_ModelOption[strPanel];
+
                 #region MDCS
 
-                m_st_OptionData.MDCSEnable = objIniFile.ReadString("MDCS", "Enable");
-                if ((m_st_OptionData.MDCSEnable != "0") && (m_st_OptionData.MDCSEnable != "1"))
+                objModelOption.MDCSEnable = objIniFile.ReadString("MDCS", "Enable");
+                if ((objModelOption.MDCSEnable != "0") && (objModelOption.MDCSEnable != "1"))
                 {
-                    strErrorMessage = "Invalid MDCS Enable:" + m_st_OptionData.MDCSEnable;
+                    strErrorMessage = "Invalid MDCS Enable:" + objModelOption.MDCSEnable;
                     return false;
                 }
 
-                m_st_OptionData.MDCSURL = objIniFile.ReadString("MDCS", "URL");
-                if (m_st_OptionData.MDCSURL == "")
+                objModelOption.MDCSURL = objIniFile.ReadString("MDCS", "URL");
+                if (objModelOption.MDCSURL == "")
                 {
-                    strErrorMessage = "Invalid MDCS URL:" + m_st_OptionData.MDCSURL;
+                    strErrorMessage = "Invalid MDCS URL:" + objModelOption.MDCSURL;
                     return false;
                 }
 
-                m_st_OptionData.MDCSDeviceName = objIniFile.ReadString("MDCS", "DeviceName");
-                if (m_st_OptionData.MDCSDeviceName == "")
+                objModelOption.MDCSDeviceName = objIniFile.ReadString("MDCS", "DeviceName");
+                if (objModelOption.MDCSDeviceName == "")
                 {
-                    strErrorMessage = "Invalid MDCS DeviceName:" + m_st_OptionData.MDCSDeviceName;
+                    strErrorMessage = "Invalid MDCS DeviceName:" + objModelOption.MDCSDeviceName;
                     return false;
                 }
 
-                m_st_OptionData.MDCSPreStationResultCheck = objIniFile.ReadString("MDCS", "PreStationResultCheck");
-                if ((m_st_OptionData.MDCSPreStationResultCheck != "0") && (m_st_OptionData.MDCSPreStationResultCheck != "1"))
+                objModelOption.MDCSPreStationResultCheck = objIniFile.ReadString("MDCS", "PreStationResultCheck");
+                if ((objModelOption.MDCSPreStationResultCheck != "0") && (objModelOption.MDCSPreStationResultCheck != "1"))
                 {
-                    strErrorMessage = "Invalid MDCS PreStationResultCheck:" + m_st_OptionData.MDCSPreStationResultCheck;
+                    strErrorMessage = "Invalid MDCS PreStationResultCheck:" + objModelOption.MDCSPreStationResultCheck;
                     return false;
                 }
 
-                m_st_OptionData.MDCSPreStationDeviceName = objIniFile.ReadString("MDCS", "PreStationDeviceName");
-                if (m_st_OptionData.MDCSPreStationDeviceName == "")
+                objModelOption.MDCSPreStationDeviceName = objIniFile.ReadString("MDCS", "PreStationDeviceName");
+                if (objModelOption.MDCSPreStationDeviceName == "")
                 {
-                    strErrorMessage = "Invalid MDCS PreStationDeviceName:" + m_st_OptionData.MDCSPreStationDeviceName;
+                    strErrorMessage = "Invalid MDCS PreStationDeviceName:" + objModelOption.MDCSPreStationDeviceName;
                     return false;
                 }
-                m_st_OptionData.MDCSPreStationVarName = objIniFile.ReadString("MDCS", "PreStationVarName");
-                if (m_st_OptionData.MDCSPreStationVarName == "")
+                objModelOption.MDCSPreStationVarName = objIniFile.ReadString("MDCS", "PreStationVarName");
+                if (objModelOption.MDCSPreStationVarName == "")
                 {
-                    strErrorMessage = "Invalid MDCS PreStationVarName:" + m_st_OptionData.MDCSPreStationVarName;
+                    strErrorMessage = "Invalid MDCS PreStationVarName:" + objModelOption.MDCSPreStationVarName;
                     return false;
                 }
 
-                m_st_OptionData.MDCSPreStationVarValue = objIniFile.ReadString("MDCS", "PreStationVarValue");
-                if (m_st_OptionData.MDCSPreStationVarValue == "")
+                objModelOption.MDCSPreStationVarValue = objIniFile.ReadString("MDCS", "PreStationVarValue");
+                if (objModelOption.MDCSPreStationVarValue == "")
                 {
-                    strErrorMessage = "Invalid MDCS PreStationVarValue:" + m_st_OptionData.MDCSPreStationVarValue;
+                    strErrorMessage = "Invalid MDCS PreStationVarValue:" + objModelOption.MDCSPreStationVarValue;
                     return false;
                 }
 
@@ -3487,16 +4052,16 @@ namespace F002459
 
                 #region QCN
 
-                m_st_OptionData.QCNFilePath = objIniFile.ReadString("QCN", "FilePath");
-                if (Directory.Exists(m_st_OptionData.QCNFilePath) == false)
+                objModelOption.QCNFilePath = objIniFile.ReadString("QCN", "FilePath");
+                if (Directory.Exists(objModelOption.QCNFilePath) == false)
                 {
-                    strErrorMessage = "Invalid QCN FilePath:" + m_st_OptionData.QCNFilePath;
+                    strErrorMessage = "Invalid QCN FilePath:" + objModelOption.QCNFilePath;
                     return false;
                 }
-                m_st_OptionData.QCNFileSize = objIniFile.ReadString("QCN", "FileSize");
-                if (int.Parse(m_st_OptionData.QCNFileSize) < 1)
+                objModelOption.QCNFileSize = objIniFile.ReadString("QCN", "FileSize");
+                if (int.Parse(objModelOption.QCNFileSize) < 1)
                 {
-                    strErrorMessage = "Invalid QCN FileSize:" + m_st_OptionData.QCNFileSize;
+                    strErrorMessage = "Invalid QCN FileSize:" + objModelOption.QCNFileSize;
                     return false;
                 }
 
@@ -3504,14 +4069,16 @@ namespace F002459
 
                 #region Matrix
 
-                m_st_OptionData.MatrixWWANPos = objIniFile.ReadInt("Matrix", "WWANPos");
-                if (m_st_OptionData.MatrixWWANPos < 1)
+                objModelOption.MatrixWWANPos = objIniFile.ReadInt("Matrix", "WWANPos");
+                if (objModelOption.MatrixWWANPos < 1)
                 {
-                    strErrorMessage = "Invalid Matrix WWANPos:" + m_st_OptionData.MatrixWWANPos.ToString();
+                    strErrorMessage = "Invalid Matrix WWANPos:" + objModelOption.MatrixWWANPos.ToString();
                     return false;
                 }
 
                 #endregion
+
+                m_dic_ModelOption[strPanel] = objModelOption;
             }
             catch (Exception ex)
             {
@@ -3619,34 +4186,51 @@ namespace F002459
                 m_dic_UnitDevice.Clear();
 
                 // Unit1
-                UnitDevice stUnit1 = new UnitDevice();
+                UnitDeviceInfo stUnit1 = new UnitDeviceInfo();
                 stUnit1.Panel = PANEL_1;
                 stUnit1.PhysicalAddress = m_st_OptionData.DeviceAddress_Panel1;
                 stUnit1.SN = "";
+                stUnit1.SKU = "";
+                stUnit1.Model = "";
+                stUnit1.EID = "";
+                stUnit1.WorkOrder = "";
                 stUnit1.Status = "0";
                 m_dic_UnitDevice.Add(PANEL_1, stUnit1);
 
                 // Unit2
-                UnitDevice stUnit2 = new UnitDevice();
+                UnitDeviceInfo stUnit2 = new UnitDeviceInfo();
                 stUnit2.Panel = PANEL_2;
                 stUnit2.PhysicalAddress = m_st_OptionData.DeviceAddress_Panel2;
                 stUnit2.SN = "";
+                stUnit2.SKU = "";
+                stUnit2.Model = "";
+                stUnit2.EID = "";
+                stUnit2.WorkOrder = "";
                 stUnit2.Status = "0";
                 m_dic_UnitDevice.Add(PANEL_2, stUnit2);
 
+
                 // Unit3
-                UnitDevice stUnit3 = new UnitDevice();
+                UnitDeviceInfo stUnit3 = new UnitDeviceInfo();
                 stUnit3.Panel = PANEL_3;
                 stUnit3.PhysicalAddress = m_st_OptionData.DeviceAddress_Panel3;
                 stUnit3.SN = "";
+                stUnit3.SKU = "";
+                stUnit3.Model = "";
+                stUnit3.EID = "";
+                stUnit3.WorkOrder = "";
                 stUnit3.Status = "0";
                 m_dic_UnitDevice.Add(PANEL_3, stUnit3);
 
                 // Unit4
-                UnitDevice stUnit4 = new UnitDevice();
-                stUnit2.Panel = PANEL_4;
+                UnitDeviceInfo stUnit4 = new UnitDeviceInfo();
+                stUnit4.Panel = PANEL_4;
                 stUnit4.PhysicalAddress = m_st_OptionData.DeviceAddress_Panel4;
                 stUnit4.SN = "";
+                stUnit4.SKU = "";
+                stUnit4.Model = "";
+                stUnit4.EID = "";
+                stUnit4.WorkOrder = "";
                 stUnit4.Status = "0";
                 m_dic_UnitDevice.Add(PANEL_4, stUnit4);
 
@@ -3661,8 +4245,8 @@ namespace F002459
                 objSaveData1.TestRecord.ToolNumber = Program.g_str_ToolNumber;
                 objSaveData1.TestRecord.ToolRev = Program.g_str_ToolRev;
                 objSaveData1.TestRecord.SN = "";
-                objSaveData1.TestRecord.Model = m_str_Model;
-                objSaveData1.TestRecord.SKU = m_st_MCFData.SKU;
+                objSaveData1.TestRecord.Model = "";
+                objSaveData1.TestRecord.SKU = "";
                 objSaveData1.TestRecord.IMEI = "";
                 objSaveData1.TestRecord.TestTotalTime = 0;
                 objSaveData1.TestResult.TestPassed = false;
@@ -3676,8 +4260,8 @@ namespace F002459
                 objSaveData2.TestRecord.ToolNumber = Program.g_str_ToolNumber;
                 objSaveData2.TestRecord.ToolRev = Program.g_str_ToolRev;
                 objSaveData2.TestRecord.SN = "";
-                objSaveData2.TestRecord.Model = m_str_Model;
-                objSaveData2.TestRecord.SKU = m_st_MCFData.SKU;
+                objSaveData2.TestRecord.Model = "";
+                objSaveData2.TestRecord.SKU = "";
                 objSaveData2.TestRecord.IMEI = "";
                 objSaveData2.TestRecord.TestTotalTime = 0;
                 objSaveData2.TestResult.TestPassed = false;
@@ -3691,8 +4275,8 @@ namespace F002459
                 objSaveData3.TestRecord.ToolNumber = Program.g_str_ToolNumber;
                 objSaveData3.TestRecord.ToolRev = Program.g_str_ToolRev;
                 objSaveData3.TestRecord.SN = "";
-                objSaveData3.TestRecord.Model = m_str_Model;
-                objSaveData3.TestRecord.SKU = m_st_MCFData.SKU;
+                objSaveData3.TestRecord.Model = "";
+                objSaveData3.TestRecord.SKU = "";
                 objSaveData3.TestRecord.IMEI = "";
                 objSaveData3.TestRecord.TestTotalTime = 0;
                 objSaveData3.TestResult.TestPassed = false;
@@ -3706,8 +4290,8 @@ namespace F002459
                 objSaveData4.TestRecord.ToolNumber = Program.g_str_ToolNumber;
                 objSaveData4.TestRecord.ToolRev = Program.g_str_ToolRev;
                 objSaveData4.TestRecord.SN = "";
-                objSaveData4.TestRecord.Model = m_str_Model;
-                objSaveData4.TestRecord.SKU = m_st_MCFData.SKU;
+                objSaveData4.TestRecord.Model = "";
+                objSaveData4.TestRecord.SKU = "";
                 objSaveData4.TestRecord.IMEI = "";
                 objSaveData4.TestRecord.TestTotalTime = 0;
                 objSaveData4.TestResult.TestPassed = false;
@@ -3807,6 +4391,287 @@ namespace F002459
             }
 
             return;
+        }
+
+        private bool ExcuteBat(string strPanel, string strBatDir, string strBatFile, string strBatParameter, int iTimeOut, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+
+            Process process = null;
+            ProcessStartInfo startInfo = null;
+
+            if (strBatParameter != "")
+            {
+                process = new Process();
+                startInfo = new ProcessStartInfo(strBatFile, strBatParameter);
+                startInfo.WorkingDirectory = strBatDir;
+                startInfo.Arguments = strBatParameter;
+                startInfo.UseShellExecute = false;
+                startInfo.RedirectStandardInput = false;
+                startInfo.RedirectStandardOutput = true;
+                startInfo.CreateNoWindow = true;
+                process.StartInfo = startInfo;
+            }
+            else
+            {
+                process = new Process();
+                startInfo = new ProcessStartInfo(strBatFile);
+                startInfo.WorkingDirectory = strBatDir;
+                startInfo.UseShellExecute = false;
+                startInfo.RedirectStandardInput = false;
+                startInfo.RedirectStandardOutput = true;
+                startInfo.CreateNoWindow = true;
+                process.StartInfo = startInfo;
+            }
+
+            try
+            {
+                if (process.Start())
+                {
+                    if (iTimeOut == 0)
+                    {
+                        process.WaitForExit();
+                    }
+                    else
+                    {
+                        process.WaitForExit(iTimeOut);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                string strr = ex.Message;
+                strErrorMessage = "Execute Bat Exception:" + strr;
+                return false;
+            }
+            finally
+            {
+                if (process != null)
+                {
+                    process.Close();
+                }
+            }
+
+            return true;
+        }
+
+        private bool ExcuteBat(string strPanel, string strBatDir, string strBatFile, string strBatParameter, int iTimeOut, string strSearchResult, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            string strOutput = "";
+
+            Process process = null;
+            ProcessStartInfo startInfo = null;
+
+            if (strBatParameter != "")
+            {
+                process = new Process();
+                startInfo = new ProcessStartInfo(strBatFile, strBatParameter);
+                startInfo.WorkingDirectory = strBatDir;
+                startInfo.Arguments = strBatParameter;
+                startInfo.UseShellExecute = false;
+                startInfo.RedirectStandardInput = false;
+                startInfo.RedirectStandardOutput = true;
+                startInfo.CreateNoWindow = true;
+                process.StartInfo = startInfo;
+            }
+            else
+            {
+                process = new Process();
+                startInfo = new ProcessStartInfo(strBatFile);
+                startInfo.WorkingDirectory = strBatDir;
+                startInfo.UseShellExecute = false;
+                startInfo.RedirectStandardInput = false;
+                startInfo.RedirectStandardOutput = true;
+                startInfo.CreateNoWindow = true;
+                process.StartInfo = startInfo;
+            }
+
+            try
+            {
+                if (process.Start())
+                {
+                    #region StandardOutput OutputDataReceived
+
+                    process.OutputDataReceived += new DataReceivedEventHandler((sender, e) =>
+                    {
+                        string strData = e.Data;
+                        if (!String.IsNullOrEmpty(strData))
+                        {
+                            strOutput += strData;
+                            this.Invoke((MethodInvoker)delegate
+                            {
+                                DisplayUnitLog(strPanel, strData);
+                            });
+                        }
+                    });
+
+                    process.BeginOutputReadLine();
+
+                    if (iTimeOut == 0)
+                    {
+                        process.WaitForExit();
+                    }
+                    else
+                    {
+                        process.WaitForExit(iTimeOut);
+                    }
+
+                    #endregion
+                }
+
+                #region Check Result
+
+                // 输出有时会延迟
+                bool bRes = false;
+                for (int i = 0; i < 20; i++)
+                {
+                    bRes = strOutput.Contains(strSearchResult);
+                    if (bRes == true)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Thread.Sleep(500);
+                        bRes = false;
+                        continue;
+                    }
+                }
+                if (bRes == false)
+                {
+                    strErrorMessage = "Check bat result:" + strSearchResult;
+                    return false;
+                }
+
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                string strr = ex.Message;
+                strErrorMessage = "Execute Bat Exception:" + strr;
+                return false;
+            }
+            finally
+            {
+                if (process != null)
+                {
+                    process.Close();
+                }
+            }
+
+            return true;
+        }
+
+        private bool ExcuteBat(string strPanel, string strBatDir, string strBatFile, string strBatParameter, int iTimeOut, string strSearchResult, ref string strResult, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            strResult = "";
+            string strOutput = "";
+
+            Process process = null;
+            ProcessStartInfo startInfo = null;
+
+            if (strBatParameter != "")
+            {
+                process = new Process();
+                startInfo = new ProcessStartInfo(strBatFile, strBatParameter);
+                startInfo.WorkingDirectory = strBatDir;
+                startInfo.Arguments = strBatParameter;
+                startInfo.UseShellExecute = false;
+                startInfo.RedirectStandardInput = false;
+                startInfo.RedirectStandardOutput = true;
+                startInfo.CreateNoWindow = true;
+                process.StartInfo = startInfo;
+            }
+            else
+            {
+                process = new Process();
+                startInfo = new ProcessStartInfo(strBatFile);
+                startInfo.WorkingDirectory = strBatDir;
+                startInfo.UseShellExecute = false;
+                startInfo.RedirectStandardInput = false;
+                startInfo.RedirectStandardOutput = true;
+                startInfo.CreateNoWindow = true;
+                process.StartInfo = startInfo;
+            }
+
+            try
+            {
+                if (process.Start())
+                {
+                    #region StandardOutput OutputDataReceived
+
+                    process.OutputDataReceived += new DataReceivedEventHandler((sender, e) =>
+                    {
+                        string strData = e.Data;
+                        if (!String.IsNullOrEmpty(strData))
+                        {
+                            strOutput += strData;
+                            this.Invoke((MethodInvoker)delegate
+                            {
+                                DisplayUnitLog(strPanel, strData);
+                            });
+                        }
+                    });
+
+                    process.BeginOutputReadLine();
+
+                    if (iTimeOut == 0)
+                    {
+                        process.WaitForExit();
+                    }
+                    else
+                    {
+                        process.WaitForExit(iTimeOut);
+                    }
+
+                    #endregion
+                }
+
+                #region Check Result
+
+                // 输出有时会延迟
+                bool bRes = false;
+                for (int i = 0; i < 20; i++)
+                {
+                    bRes = strOutput.Contains(strSearchResult);
+                    if (bRes == true)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Thread.Sleep(500);
+                        bRes = false;
+                        continue;
+                    }
+                }
+                if (bRes == false)
+                {
+                    strErrorMessage = "Check bat result:" + strSearchResult;
+                    return false;
+                }
+
+                strResult = strOutput;
+
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                string strr = ex.Message;
+                strErrorMessage = "Execute Bat Exception:" + strr;
+                return false;
+            }
+            finally
+            {
+                if (process != null)
+                {
+                    process.Close();
+                }
+            }
+
+            return true;
         }
 
         private void ConfirmDlg(string str_Content)
@@ -4277,7 +5142,7 @@ namespace F002459
 
         #endregion       
 
-        #endregion
+        //#endregion
 
 
     }
