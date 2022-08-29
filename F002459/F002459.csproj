@@ -70,7 +70,8 @@
     <Reference Include="libnodave.net">
       <HintPath>Lib\libnodave.net.dll</HintPath>
     </Reference>
-    <Reference Include="MDCS">
+    <Reference Include="MDCS, Version=3.0.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>Lib\MDCS.dll</HintPath>
     </Reference>
     <Reference Include="MDCS.XmlSerializers, Version=3.0.0.1, Culture=neutral, processorArchitecture=MSIL">
@@ -84,7 +85,7 @@
     <Reference Include="NationalInstruments.DAQmx">
       <HintPath>Lib\NationalInstruments.DAQmx.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Lib\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -231,15 +232,9 @@
     <None Include="HWSerNumEmulation.reg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Lib\ExternalDLL.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Lib\MESWebAPI.dll.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Lib\UploadTestData.dll.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <None Include="Lib\ExternalDLL.config" />
+    <None Include="Lib\MESWebAPI.dll.config" />
+    <None Include="Lib\UploadTestData.dll.config" />
     <None Include="Option.ini">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -310,45 +305,19 @@
     <Content Include="BAT\AdbWinUsbApi.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Lib\ICSharpCode.SharpZipLib.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\libnodave.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\libnodave.net.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\MDCS.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\MDCS.XmlSerializers.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\MESWebAPI.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\NationalInstruments.Common.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\NationalInstruments.DAQmx.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\Newtonsoft.Json.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\QMSL_MSVC10R.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\SmartFactory.ExternalDLL.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\UploadTestData.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\WinTcpS7_1K.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="Lib\ICSharpCode.SharpZipLib.dll" />
+    <Content Include="Lib\libnodave.dll" />
+    <Content Include="Lib\libnodave.net.dll" />
+    <Content Include="Lib\MDCS.dll" />
+    <Content Include="Lib\MDCS.XmlSerializers.dll" />
+    <Content Include="Lib\MESWebAPI.dll" />
+    <Content Include="Lib\NationalInstruments.Common.dll" />
+    <Content Include="Lib\NationalInstruments.DAQmx.dll" />
+    <Content Include="Lib\Newtonsoft.Json.dll" />
+    <Content Include="Lib\QMSL_MSVC10R.dll" />
+    <Content Include="Lib\SmartFactory.ExternalDLL.dll" />
+    <Content Include="Lib\UploadTestData.dll" />
+    <Content Include="Lib\WinTcpS7_1K.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

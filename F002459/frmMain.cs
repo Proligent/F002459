@@ -517,8 +517,7 @@ namespace F002459
             }
             catch (Exception ex)
             {
-                string strr = ex.Message;
-                DisplayMessage("timerAutoTest Exception:" + strr);
+                DisplayMessage("timerAutoTest Exception:" + ex.Message);
                 return;
             }
             finally
@@ -1323,17 +1322,16 @@ namespace F002459
 
                         #region Obsolete
 
-                        //if (bSaveMDCS == false)
-                        //{
-                        //    bRes = false;
-                        //}
+                        if (bSaveMDCS == false)
+                        {
+                            bRes = false;
+                        }
 
                         #endregion
                     }
                 }
 
                 #endregion
-
 
                 #region Upload MES
 
@@ -1657,9 +1655,6 @@ namespace F002459
             }
         }
 
-
-
-
         private bool GetSKUProperty(string strPanel, ref string strSKU, ref string strErrorMessage)
         {
             strErrorMessage = "";
@@ -1860,7 +1855,6 @@ namespace F002459
             return true;
         }
 
-    
         #endregion
 
         private bool TestCheckPreStationResult(string strPanel, ref string strErrorMessage)
@@ -2173,7 +2167,7 @@ namespace F002459
                     strErrorMessage = "Failed to check QCN file size." + strQCNFileSize;
                     return false;
                 }
-                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Check QCN file size " + strQCNFileSize + " > " + m_st_OptionData.QCNFileSize); });
+                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Check QCN file size " + strQCNFileSize + " > " + m_dic_ModelOption[strPanel].QCNFileSize); });
 
                 #endregion
 
@@ -3529,7 +3523,6 @@ namespace F002459
                     #region Run Test
 
                     bool bRunRes = true;
-
                     InitMDCSData(strPanel);
 
                     #region Monitor Device
@@ -3605,12 +3598,10 @@ namespace F002459
                 else
                 {
                 }
-
             }
             catch (Exception ex)
             {
-                string strr = ex.Message;
-                DisplayMessage("AutoTest Exception:" + strr);
+                DisplayMessage("AutoTest Exception:" + ex.Message);
                 return;
             }
 
@@ -3623,35 +3614,32 @@ namespace F002459
 
         private bool InitRun()
         {
-            string strOptionFileName = "";
+            //string strOptionFileName = "";
             string strErrorMessage = "";
+
+            rtbTestLog.Clear();
+            InitBackgroundworker();
 
             #region Clear COM Port in use
 
-            DisplayMessage("Clear COM port inuse status.");
-            if (DeleteCOMNameArbiterReg() == false)
-            {
-                DisplayMessage("Clear COM port inuse status fail.");
-                return false;
-            }
+            //DisplayMessage("Clear COM port inuse status.");
+            //if (DeleteCOMNameArbiterReg() == false)
+            //{
+            //    DisplayMessage("Clear COM port inuse status fail.");
+            //    return false;
+            //}
 
             #endregion
 
             #region HWSerNumEmulationReg
 
-            DisplayMessage("HWSerNumEmulationReg.");
-            if (HWSerNumEmulationReg() == false)
-            {
-                DisplayMessage("HWSerNumEmulationReg fail.");
-                return false;
-            }
-            DisplayMessage("HWSerNumEmulationReg successfully.");
-
-            #endregion
-
-            #region Background
-
-            InitBackgroundworker();
+            //DisplayMessage("HWSerNumEmulationReg.");
+            //if (HWSerNumEmulationReg() == false)
+            //{
+            //    DisplayMessage("HWSerNumEmulationReg fail.");
+            //    return false;
+            //}
+            //DisplayMessage("HWSerNumEmulationReg successfully.");
 
             #endregion
 
@@ -3676,7 +3664,7 @@ namespace F002459
 
             #endregion
 
-            #region Model_Option.ini
+            #region Model_Option.ini (Obsolete)
 
             //if (m_str_Model == "UL")
             //{
@@ -3699,7 +3687,8 @@ namespace F002459
 
             #region Setup.ini
 
-            DisplayMessage("Setup ini:" + Application.StartupPath + "\\" + "Setup.ini");
+            DisplayMessage("Read Setup.ini file.");
+            //DisplayMessage("Setup ini:" + Application.StartupPath + "\\" + "Setup.ini");
             if (ReadSetupFile(ref strErrorMessage) == false)
             {
                 DisplayMessage("Failed to read setup.ini file." + strErrorMessage);
@@ -3799,6 +3788,8 @@ namespace F002459
             return true;
         }
 
+        #region Obsolete
+
         //private bool ScanMCF()
         //{
         //    frmMCF frmMCF = new frmMCF();
@@ -3847,6 +3838,8 @@ namespace F002459
 
         //    return true;
         //}
+
+        #endregion
 
         private bool GetModelBySKU(string strPanel, ref string strModel)
         {
@@ -3941,7 +3934,7 @@ namespace F002459
                     return false;
                 }
 
-                m_st_OptionData.MES_Station = objIniFile.ReadString("MES", "StationName");
+                m_st_OptionData.MES_Station = objIniFile.ReadString("MES", "Station");
                 if (m_st_OptionData.MES_Station == "")
                 {
                     strErrorMessage = "Invalid MES Station:" + m_st_OptionData.MES_Station;
@@ -4233,6 +4226,68 @@ namespace F002459
                 stUnit4.WorkOrder = "";
                 stUnit4.Status = "0";
                 m_dic_UnitDevice.Add(PANEL_4, stUnit4);
+
+                #endregion
+
+                #region m_dic_ModelOption
+
+                m_dic_ModelOption.Clear();
+
+                // Unit1
+                ModelOption objModelOption1 = new ModelOption();
+                objModelOption1.QCNFilePath = "";
+                objModelOption1.QCNFileSize = "";
+                objModelOption1.MatrixWWANPos = 0;
+                objModelOption1.MDCSEnable = "";
+                objModelOption1.MDCSURL = "";
+                objModelOption1.MDCSDeviceName = "";
+                objModelOption1.MDCSPreStationResultCheck = "";
+                objModelOption1.MDCSPreStationDeviceName = "";
+                objModelOption1.MDCSPreStationVarName = "";
+                objModelOption1.MDCSPreStationVarValue = "";
+                m_dic_ModelOption.Add(PANEL_1, objModelOption1);
+
+                // Unit2
+                ModelOption objModelOption2 = new ModelOption();
+                objModelOption2.QCNFilePath = "";
+                objModelOption2.QCNFileSize = "";
+                objModelOption2.MatrixWWANPos = 0;
+                objModelOption2.MDCSEnable = "";
+                objModelOption2.MDCSURL = "";
+                objModelOption2.MDCSDeviceName = "";
+                objModelOption2.MDCSPreStationResultCheck = "";
+                objModelOption2.MDCSPreStationDeviceName = "";
+                objModelOption2.MDCSPreStationVarName = "";
+                objModelOption2.MDCSPreStationVarValue = "";
+                m_dic_ModelOption.Add(PANEL_2, objModelOption2);
+
+                // Unit3
+                ModelOption objModelOption3 = new ModelOption();
+                objModelOption3.QCNFilePath = "";
+                objModelOption3.QCNFileSize = "";
+                objModelOption3.MatrixWWANPos = 0;
+                objModelOption3.MDCSEnable = "";
+                objModelOption3.MDCSURL = "";
+                objModelOption3.MDCSDeviceName = "";
+                objModelOption3.MDCSPreStationResultCheck = "";
+                objModelOption3.MDCSPreStationDeviceName = "";
+                objModelOption3.MDCSPreStationVarName = "";
+                objModelOption3.MDCSPreStationVarValue = "";
+                m_dic_ModelOption.Add(PANEL_3, objModelOption3);
+
+                // Unit4
+                ModelOption objModelOption4 = new ModelOption();
+                objModelOption4.QCNFilePath = "";
+                objModelOption4.QCNFileSize = "";
+                objModelOption4.MatrixWWANPos = 0;
+                objModelOption4.MDCSEnable = "";
+                objModelOption4.MDCSURL = "";
+                objModelOption4.MDCSDeviceName = "";
+                objModelOption4.MDCSPreStationResultCheck = "";
+                objModelOption4.MDCSPreStationDeviceName = "";
+                objModelOption4.MDCSPreStationVarName = "";
+                objModelOption4.MDCSPreStationVarValue = "";
+                m_dic_ModelOption.Add(PANEL_4, objModelOption4);
 
                 #endregion
 
