@@ -95,6 +95,7 @@ namespace F002459
         #region Variable
 
         private bool m_bCollapse = true;
+        private string m_PreStationDeviceName = "";
         //private string m_str_Model = "";    
         //private MCFData m_st_MCFData = new MCFData();
         //private MESData m_st_MESData = new MESData();
@@ -1663,6 +1664,7 @@ namespace F002459
             try
             {
                 bool bRes = false;
+                bool bFlag = false;
                 string strResult = "";
                 string strSN = m_dic_UnitDevice[strPanel].SN;
                 string strBatDir = Application.StartupPath + "\\" + "BAT";
@@ -1680,36 +1682,41 @@ namespace F002459
                 strBatParameter = strSN;
                 for (int i = 0; i < 5; i++)
                 {
-                    strResult = "";
+                    strSKU = "";
+                    strResult = "";           
                     bRes = ExcuteBat(strPanel, strBatDir, strBatFile, strBatParameter, iTimeout, strSearchResult, ref strResult, ref strErrorMessage);
                     if (bRes == false)
                     {
-                        bRes = false;
-                        Dly(10);
+                        strErrorMessage = "Execute bat to get SKU fail.";
+                        bFlag = false;
+                        Dly(10);          
                         continue;
                     }
 
-                    bRes = true;
+                    // Truncate SKU      
+                    int index = strResult.IndexOf("SKU:");
+                    if (index != -1)
+                    {
+                        strResult = strResult.Substring(index + 4);
+                        index = strResult.IndexOf("*");
+                        strSKU = strResult.Substring(0, index);
+                    }
+
+                    if (string.IsNullOrWhiteSpace(strSKU) || strSKU.IndexOf("-") == -1)
+                    {
+                        strErrorMessage = "Get SKU format error !!!";
+                        bFlag = false;   
+                        Dly(10); 
+                        continue;
+                    }
+
+                    bFlag = true;
                     break;
                 }
-                if (bRes == false)
-                {
-                    strErrorMessage = "Execute bat to get SKU fail.";
-                    return false;
-                }
 
-                // Truncate SKU      
-                int index = strResult.IndexOf("SKU:");
-                if (index != -1)
+                if (bFlag == false)
                 {
-                    strResult = strResult.Substring(index + 4);
-                    index = strResult.IndexOf("*");
-                    strSKU = strResult.Substring(0, index);
-                }
-
-                if (string.IsNullOrWhiteSpace(strSKU) || strSKU.IndexOf("-") == 0)
-                {
-                    strErrorMessage = "Get SKU format error !!!";
+                    strErrorMessage = "Get SKU property fail.";
                     return false;
                 }
             }
@@ -1730,6 +1737,7 @@ namespace F002459
             try
             {
                 bool bRes = false;
+                bool bFlag = false;
                 string strResult = "";
                 string strSN = m_dic_UnitDevice[strPanel].SN;
                 string strBatDir = Application.StartupPath + "\\" + "BAT";
@@ -1748,37 +1756,42 @@ namespace F002459
                 for (int i = 0; i < 5; i++)
                 {
                     strResult = "";
+                    strWorkOrder = "";
                     bRes = ExcuteBat(strPanel, strBatDir, strBatFile, strBatParameter, iTimeout, strSearchResult, ref strResult, ref strErrorMessage);
                     if (bRes == false)
                     {
-                        bRes = false;
+                        strErrorMessage = "Execute bat to get WorkOrder fail.";
+                        bFlag = false;
                         Dly(10);
                         continue;
                     }
 
-                    bRes = true;
+                    // Truncate WorkOrder   
+                    int index = strResult.IndexOf("WorkOrder:");
+                    if (index != -1)
+                    {
+                        strResult = strResult.Substring(index + 10);
+                        index = strResult.IndexOf("*");
+                        strWorkOrder = strResult.Substring(0, index);
+                    }
+
+                    if (string.IsNullOrWhiteSpace(strWorkOrder))
+                    {
+                        strErrorMessage = "Get WorkOrder is empty !!!";
+                        bFlag = false;       
+                        Dly(10);
+                        continue;
+                    }
+
+                    bFlag = true;
                     break;
                 }
-                if (bRes == false)
-                {
-                    strErrorMessage = "Execute bat to get WorkOrder fail.";
-                    return false;
-                }
 
-                // Truncate WorkOrder   
-                int index = strResult.IndexOf("WorkOrder:");
-                if (index != -1)
+                if (bFlag == false)
                 {
-                    strResult = strResult.Substring(index + 10);
-                    index = strResult.IndexOf("*");
-                    strWorkOrder = strResult.Substring(0, index);
-                }
-
-                if (string.IsNullOrWhiteSpace(strWorkOrder))
-                {
-                    strErrorMessage = "Get WorkOrder is empty !!!";
+                    strErrorMessage = "Get WorkOrder property fail.";
                     return false;
-                }
+                }         
             }
             catch (Exception ex)
             {
@@ -1797,6 +1810,7 @@ namespace F002459
             try
             {
                 bool bRes = false;
+                bool bFlag = false;
                 string strResult = "";
                 string strSN = m_dic_UnitDevice[strPanel].SN;
                 string strBatDir = Application.StartupPath + "\\" + "BAT";
@@ -1814,37 +1828,42 @@ namespace F002459
                 strBatParameter = strSN;
                 for (int i = 0; i < 5; i++)
                 {
+                    strEID = "";
                     strResult = "";
                     bRes = ExcuteBat(strPanel, strBatDir, strBatFile, strBatParameter, iTimeout, strSearchResult, ref strResult, ref strErrorMessage);
                     if (bRes == false)
                     {
-                        bRes = false;
+                        strErrorMessage = "Execute bat to get EID fail.";
+                        bFlag = false;
                         Dly(10);
-                        continue;
+                        continue;              
                     }
 
-                    bRes = true;
+                    int index = strResult.IndexOf("EID:");
+                    if (index != -1)
+                    {
+                        strResult = strResult.Substring(index + 4);
+                        index = strResult.IndexOf("*");
+                        strEID = strResult.Substring(0, index);
+                    }
+
+                    if (string.IsNullOrWhiteSpace(strEID))
+                    {
+                        strErrorMessage = "Get EID is empty !!!";
+                        bFlag = false;      
+                        Dly(10);
+                        continue;                   
+                    }
+
+                    bFlag = true;
                     break;
                 }
-                if (bRes == false)
-                {
-                    strErrorMessage = "Execute bat to get EID fail.";
-                    return false;
-                }
 
-                int index = strResult.IndexOf("EID:");
-                if (index != -1)
+                if (bFlag == false)
                 {
-                    strResult = strResult.Substring(index + 4);
-                    index = strResult.IndexOf("*");
-                    strEID = strResult.Substring(0, index);
-                }
-
-                if (string.IsNullOrWhiteSpace(strEID))
-                {
-                    strErrorMessage = "Get EID is empty !!!";
+                    strErrorMessage = "Get EID property fail.";
                     return false;
-                }
+                }      
             }
             catch (Exception ex)
             {
@@ -1872,93 +1891,107 @@ namespace F002459
                 {
                     this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Test Check Pre Station Result."); });
 
+                    #region Check Multi-PreStation Result
+
                     string str_SN = m_dic_UnitDevice[strPanel].SN;
                     if (str_SN == "")
                     {
                         strErrorMessage = "Invalid SN." + str_SN;
                         return false;
                     }
-                    string str_ErrorMessage = "";
-                    clsMDCS obj_SaveMDCS = new clsMDCS();
-                    obj_SaveMDCS.ServerName = MDCSURL;
-                    obj_SaveMDCS.DeviceName = MDCSPreStationDeviceName;
-                    obj_SaveMDCS.UseModeProduction = true;
 
-                    bool bRes = false;
-                    string strValue = "";
-                    for (int i = 0; i < 10; i++)
+                    string PreStationDeviceNames = MDCSPreStationDeviceName;
+                    string[] MDCSDeviceNames = PreStationDeviceNames.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    if (MDCSDeviceNames.Length == 0)
                     {
-                        bRes = obj_SaveMDCS.GetMDCSVariable(MDCSPreStationDeviceName, MDCSPreStationVarName, str_SN, ref strValue, ref str_ErrorMessage);
-                        if (bRes == false)
+                        strErrorMessage = "Pre station device name count is 0";
+                        return false;
+                    }
+
+                    bool bRet = false;
+                    for (int i = 0; i < 2; i++)
+                    {
+                        foreach (string PreStationName in MDCSDeviceNames)
                         {
-                            bRes = false;
-                            strErrorMessage = "GetMDCSVariable fail.";
-                            Dly(2);
-                            continue;
-                        }
-                        else
-                        {
-                            if (strValue != MDCSPreStationVarValue)
+                            bRet = false;
+                            this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Start Check Pre Station: " + PreStationName.Trim()); });
+
+                            bRet = CheckSinglePreStationResult(strPanel, str_SN, PreStationName.Trim(), ref strErrorMessage);
+                            if (bRet == true)
                             {
-                                bRes = false;
-                                strErrorMessage = "Pre station:" + MDCSPreStationDeviceName + " Compare value fail." + strValue;
-                                Dly(1);
-                                continue;
+                                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Check Pre Station: " + PreStationName.Trim() + " Result Success"); });
+                                m_PreStationDeviceName = PreStationName;
+                                break;
                             }
                             else
                             {
-                                bRes = true;
-                                strErrorMessage = "";
-                                break;
+                                this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Check Pre Station: " + PreStationName.Trim() + " Result Fail"); });
+                                m_PreStationDeviceName = "";
+                                continue;
                             }
                         }
-                    }
-                    if (bRes == false)
-                    {
-                        return false;
-                    }
 
-                    this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Test Check Pre Station Result successfully."); });
-                    
-                    
-                    bRes = false;
-                    String cmd = "";
-                    String result = "";
-                    for (int i = 0; i < 3; i++)
-                    {
-                        cmd = "adb -s " + str_SN + " kill-server";
-                        result = clsUtil.ExecuteGetSysProp(cmd, 100, true);
-                    }
-                    for (int i = 0; i < 3; i++)
-                    {
-                        cmd = "adb -s " + str_SN + " shell getprop persist.sys.BITAutoRlt";
-                        result = "";
-                        this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Get BIT manual Result."); });
-                        result = clsUtil.ExecuteGetSysProp(cmd, 100, true);
-                        if (result != null && result.Length > 0 && result.Contains("true"))
+                        if (bRet == true)
                         {
-                            this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Getprop persist.sys.BITAutoRlt true!"); });
-                            bRes = true;
-                            strErrorMessage = "";
                             break;
                         }
-                        else
-                        {
-                            bRes = false;
-                            strErrorMessage = "Check Manual BIT result failed!";
-                            Dly(1);
-                            continue;
-                        }
+
+                        Dly(2);
+                        this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Loop Again to Check Pre Station. "); });
                     }
-                    if (bRes == false)
+
+                    if (bRet == false)
                     {
-                        strErrorMessage = "Check Manual BIT result failed!";
                         return false;
                     }
+                  
+                    this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Test Check Pre Station Result successful." + "\r\n"); });
+
+                    #endregion
+
+                    #region Check Manual BIT Result (Obsolete)
+
+                    //bRes = false;
+                    //String cmd = "";
+                    //String result = "";
+                    //for (int i = 0; i < 3; i++)
+                    //{
+                    //    cmd = "adb -s " + str_SN + " kill-server";
+                    //    result = clsUtil.ExecuteGetSysProp(cmd, 100, true);
+                    //}
+                    //for (int i = 0; i < 3; i++)
+                    //{
+                    //    cmd = "adb -s " + str_SN + " shell getprop persist.sys.BITAutoRlt";
+                    //    result = "";
+                    //    this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Get BIT manual Result."); });
+                    //    result = clsUtil.ExecuteGetSysProp(cmd, 100, true);
+                    //    if (result != null && result.Length > 0 && result.Contains("true"))
+                    //    {
+                    //        this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Getprop persist.sys.BITAutoRlt true!"); });
+                    //        bRes = true;
+                    //        strErrorMessage = "";
+                    //        break;
+                    //    }
+                    //    else
+                    //    {
+                    //        bRes = false;
+                    //        strErrorMessage = "Check Manual BIT result failed!";
+                    //        Dly(1);
+                    //        continue;
+                    //    }
+                    //}
+                    //if (bRes == false)
+                    //{
+                    //    strErrorMessage = "Check Manual BIT result failed!";
+                    //    return false;
+                    //}
+
+                    #endregion
                 }
                 else
                 {
-                    this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Test Check Pre Station Result skipped."); });
+                    this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Skip to Check Pre Station."); });
                 }
             }
             catch (Exception ex)
@@ -2196,7 +2229,7 @@ namespace F002459
                     }
                     else
                     {
-                        this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "QLIB DisconnectServer successfully."); });
+                        this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "QLIB DisconnectServer successfully." + "\r\n"); });
                     }
                 }
 
@@ -3273,6 +3306,47 @@ namespace F002459
             return true;
         }
 
+        private bool CheckSinglePreStationResult(string strPanel, string SN, string deviceName, ref string strErrorMessage)
+        {
+            clsMDCS obj_SaveMDCS = new clsMDCS();
+            obj_SaveMDCS.ServerName = m_dic_ModelOption[strPanel].MDCSURL;
+            obj_SaveMDCS.DeviceName = deviceName;
+            obj_SaveMDCS.UseModeProduction = true;
+
+
+            bool bRes = false;
+            string strValue = "";
+            for (int i = 0; i < 1; i++)
+            {
+                bRes = obj_SaveMDCS.GetMDCSVariable(deviceName, m_dic_ModelOption[strPanel].MDCSPreStationVarName, SN, ref strValue, ref strErrorMessage);
+                if (bRes == false)
+                {
+                    bRes = false;
+                    strErrorMessage = "GetMDCSVariable fail.";
+                    //Dly(1);
+                    continue;
+                }
+                else
+                {
+                    if (strValue != m_dic_ModelOption[strPanel].MDCSPreStationVarValue)
+                    {
+                        bRes = false;
+                        strErrorMessage = "Pre station:" + deviceName + " Compare value fail. " + strValue;
+                        //Dly(1);
+                        continue;
+                    }
+                    else
+                    {
+                        bRes = true;
+                        strErrorMessage = "";
+                        break;
+                    }
+                }
+            }
+
+            return bRes;
+        }
+
         #endregion
 
         #region MES
@@ -3640,6 +3714,11 @@ namespace F002459
             //    return false;
             //}
             //DisplayMessage("HWSerNumEmulationReg successfully.");
+
+            #endregion
+
+            #region Start adb
+
 
             #endregion
 

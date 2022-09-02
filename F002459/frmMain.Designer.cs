@@ -226,10 +226,10 @@
             this.panelDesktop.Controls.Add(this.panelUnits);
             this.panelDesktop.Controls.Add(this.panelLog);
             this.panelDesktop.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelDesktop.Location = new System.Drawing.Point(200, 25);
+            this.panelDesktop.Location = new System.Drawing.Point(200, 24);
             this.panelDesktop.Margin = new System.Windows.Forms.Padding(0);
             this.panelDesktop.Name = "panelDesktop";
-            this.panelDesktop.Size = new System.Drawing.Size(824, 713);
+            this.panelDesktop.Size = new System.Drawing.Size(824, 714);
             this.panelDesktop.TabIndex = 2;
             this.panelDesktop.Resize += new System.EventHandler(this.panelDesktop_Resize);
             // 
@@ -242,7 +242,7 @@
             this.panelUnits.Margin = new System.Windows.Forms.Padding(0);
             this.panelUnits.Name = "panelUnits";
             this.panelUnits.Padding = new System.Windows.Forms.Padding(3);
-            this.panelUnits.Size = new System.Drawing.Size(824, 568);
+            this.panelUnits.Size = new System.Drawing.Size(824, 569);
             this.panelUnits.TabIndex = 2;
             // 
             // panelUnitBottom
@@ -253,7 +253,7 @@
             this.panelUnitBottom.Location = new System.Drawing.Point(3, 284);
             this.panelUnitBottom.Margin = new System.Windows.Forms.Padding(0);
             this.panelUnitBottom.Name = "panelUnitBottom";
-            this.panelUnitBottom.Size = new System.Drawing.Size(818, 281);
+            this.panelUnitBottom.Size = new System.Drawing.Size(818, 282);
             this.panelUnitBottom.TabIndex = 1;
             // 
             // panelUnit4
@@ -267,7 +267,7 @@
             this.panelUnit4.Margin = new System.Windows.Forms.Padding(0);
             this.panelUnit4.Name = "panelUnit4";
             this.panelUnit4.Padding = new System.Windows.Forms.Padding(2);
-            this.panelUnit4.Size = new System.Drawing.Size(409, 281);
+            this.panelUnit4.Size = new System.Drawing.Size(409, 282);
             this.panelUnit4.TabIndex = 2;
             // 
             // panelUnit4Log
@@ -277,7 +277,7 @@
             this.panelUnit4Log.Location = new System.Drawing.Point(2, 62);
             this.panelUnit4Log.Margin = new System.Windows.Forms.Padding(0);
             this.panelUnit4Log.Name = "panelUnit4Log";
-            this.panelUnit4Log.Size = new System.Drawing.Size(403, 215);
+            this.panelUnit4Log.Size = new System.Drawing.Size(403, 216);
             this.panelUnit4Log.TabIndex = 3;
             // 
             // rtbUnit4Log
@@ -289,7 +289,7 @@
             this.rtbUnit4Log.Location = new System.Drawing.Point(0, 0);
             this.rtbUnit4Log.Name = "rtbUnit4Log";
             this.rtbUnit4Log.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
-            this.rtbUnit4Log.Size = new System.Drawing.Size(403, 215);
+            this.rtbUnit4Log.Size = new System.Drawing.Size(403, 216);
             this.rtbUnit4Log.TabIndex = 0;
             this.rtbUnit4Log.Text = "";
             // 
@@ -364,7 +364,7 @@
             this.panelUnit3.Margin = new System.Windows.Forms.Padding(0);
             this.panelUnit3.Name = "panelUnit3";
             this.panelUnit3.Padding = new System.Windows.Forms.Padding(2);
-            this.panelUnit3.Size = new System.Drawing.Size(409, 281);
+            this.panelUnit3.Size = new System.Drawing.Size(409, 282);
             this.panelUnit3.TabIndex = 1;
             // 
             // panelUnit3Log
@@ -374,7 +374,7 @@
             this.panelUnit3Log.Location = new System.Drawing.Point(2, 62);
             this.panelUnit3Log.Margin = new System.Windows.Forms.Padding(0);
             this.panelUnit3Log.Name = "panelUnit3Log";
-            this.panelUnit3Log.Size = new System.Drawing.Size(403, 215);
+            this.panelUnit3Log.Size = new System.Drawing.Size(403, 216);
             this.panelUnit3Log.TabIndex = 3;
             // 
             // rtbUnit3Log
@@ -386,7 +386,7 @@
             this.rtbUnit3Log.Location = new System.Drawing.Point(0, 0);
             this.rtbUnit3Log.Name = "rtbUnit3Log";
             this.rtbUnit3Log.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
-            this.rtbUnit3Log.Size = new System.Drawing.Size(403, 215);
+            this.rtbUnit3Log.Size = new System.Drawing.Size(403, 216);
             this.rtbUnit3Log.TabIndex = 0;
             this.rtbUnit3Log.Text = "";
             // 
@@ -660,7 +660,7 @@
             this.panelLog.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panelLog.Controls.Add(this.rtbTestLog);
             this.panelLog.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.panelLog.Location = new System.Drawing.Point(0, 568);
+            this.panelLog.Location = new System.Drawing.Point(0, 569);
             this.panelLog.Margin = new System.Windows.Forms.Padding(0);
             this.panelLog.Name = "panelLog";
             this.panelLog.Padding = new System.Windows.Forms.Padding(3);
@@ -685,9 +685,9 @@
             this.panelMenu.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(30)))), ((int)(((byte)(68)))));
             this.panelMenu.Controls.Add(this.panelHome);
             this.panelMenu.Dock = System.Windows.Forms.DockStyle.Left;
-            this.panelMenu.Location = new System.Drawing.Point(0, 25);
+            this.panelMenu.Location = new System.Drawing.Point(0, 24);
             this.panelMenu.Name = "panelMenu";
-            this.panelMenu.Size = new System.Drawing.Size(200, 713);
+            this.panelMenu.Size = new System.Drawing.Size(200, 714);
             this.panelMenu.TabIndex = 1;
             // 
             // panelHome
@@ -879,7 +879,7 @@
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1024, 25);
+            this.menuStrip1.Size = new System.Drawing.Size(1024, 24);
             this.menuStrip1.TabIndex = 0;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -888,13 +888,13 @@
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.exitToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(39, 21);
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(93, 22);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.Exit_ToolStripMenuItem_Click);
             // 
@@ -903,13 +903,13 @@
             this.configurationToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.addressMapToolStripMenuItem});
             this.configurationToolStripMenuItem.Name = "configurationToolStripMenuItem";
-            this.configurationToolStripMenuItem.Size = new System.Drawing.Size(99, 21);
+            this.configurationToolStripMenuItem.Size = new System.Drawing.Size(93, 20);
             this.configurationToolStripMenuItem.Text = "Configuration";
             // 
             // addressMapToolStripMenuItem
             // 
             this.addressMapToolStripMenuItem.Name = "addressMapToolStripMenuItem";
-            this.addressMapToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
+            this.addressMapToolStripMenuItem.Size = new System.Drawing.Size(143, 22);
             this.addressMapToolStripMenuItem.Text = "Address Map";
             this.addressMapToolStripMenuItem.Click += new System.EventHandler(this.PortMapping_ToolStripMenuItem_Click);
             // 
@@ -919,20 +919,20 @@
             this.deleteCOMArbiterToolStripMenuItem,
             this.hWSerEmulationToolStripMenuItem});
             this.regeditToolStripMenuItem.Name = "regeditToolStripMenuItem";
-            this.regeditToolStripMenuItem.Size = new System.Drawing.Size(65, 21);
+            this.regeditToolStripMenuItem.Size = new System.Drawing.Size(59, 20);
             this.regeditToolStripMenuItem.Text = "Regedit";
             // 
             // deleteCOMArbiterToolStripMenuItem
             // 
             this.deleteCOMArbiterToolStripMenuItem.Name = "deleteCOMArbiterToolStripMenuItem";
-            this.deleteCOMArbiterToolStripMenuItem.Size = new System.Drawing.Size(187, 22);
+            this.deleteCOMArbiterToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
             this.deleteCOMArbiterToolStripMenuItem.Text = "Delete COMArbiter";
             this.deleteCOMArbiterToolStripMenuItem.Click += new System.EventHandler(this.deleteCOMNameArbiterToolStripMenuItem_Click);
             // 
             // hWSerEmulationToolStripMenuItem
             // 
             this.hWSerEmulationToolStripMenuItem.Name = "hWSerEmulationToolStripMenuItem";
-            this.hWSerEmulationToolStripMenuItem.Size = new System.Drawing.Size(187, 22);
+            this.hWSerEmulationToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
             this.hWSerEmulationToolStripMenuItem.Text = "HWSerEmulation";
             this.hWSerEmulationToolStripMenuItem.Click += new System.EventHandler(this.hWSerEmulationToolStripMenuItem_Click);
             // 
@@ -941,20 +941,20 @@
             this.qPSTToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.killQPSTToolStripMenuItem});
             this.qPSTToolStripMenuItem.Name = "qPSTToolStripMenuItem";
-            this.qPSTToolStripMenuItem.Size = new System.Drawing.Size(51, 21);
+            this.qPSTToolStripMenuItem.Size = new System.Drawing.Size(47, 20);
             this.qPSTToolStripMenuItem.Text = "QPST";
             // 
             // killQPSTToolStripMenuItem
             // 
             this.killQPSTToolStripMenuItem.Name = "killQPSTToolStripMenuItem";
-            this.killQPSTToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.killQPSTToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
             this.killQPSTToolStripMenuItem.Text = "KillQPST";
             this.killQPSTToolStripMenuItem.Click += new System.EventHandler(this.killQPSTToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
-            this.helpToolStripMenuItem.Size = new System.Drawing.Size(47, 21);
+            this.helpToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             this.helpToolStripMenuItem.Text = "Help";
             // 
             // timerMonitor
