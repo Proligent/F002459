@@ -65,19 +65,6 @@ namespace F002459
             public string MDCSPreStationVarValue;
         }
 
-        #region Obsolete
-        //private struct MCFData
-        //{
-        //    public string SKU;
-        //}
-
-        //private struct MESData
-        //{
-        //    public string EID;
-        //    public string WorkOrder;
-        //}
-        #endregion
-
         private struct UnitDeviceInfo
         {
             public string Panel;    
@@ -96,9 +83,6 @@ namespace F002459
 
         private bool m_bCollapse = true;
         private string m_PreStationDeviceName = "";
-        //private string m_str_Model = "";    
-        //private MCFData m_st_MCFData = new MCFData();
-        //private MESData m_st_MESData = new MESData();
         private OptionData m_st_OptionData = new OptionData();
         private Dictionary<string, UnitDeviceInfo> m_dic_UnitDevice = new Dictionary<string, UnitDeviceInfo>();
         private Dictionary<string, ModelOption> m_dic_ModelOption = new Dictionary<string, ModelOption>();
@@ -140,7 +124,6 @@ namespace F002459
             this.ControlBox = false;
             this.DoubleBuffered = true;
             this.MaximizedBounds = Screen.PrimaryScreen.WorkingArea;
-
         }
 
         private void frmMain_Load(object sender, EventArgs e)
@@ -260,7 +243,6 @@ namespace F002459
 
             Win32.ReleaseCapture();
             Win32.SendMessage(this.Handle, 0x112, 0xf012, 0);
-
         }
 
         private void picBoxLogo_Click(object sender, EventArgs e)
@@ -301,6 +283,7 @@ namespace F002459
         #endregion
 
         #region Override
+
         protected override CreateParams CreateParams
         {
             get
@@ -325,7 +308,6 @@ namespace F002459
             if (m_st_OptionData.TestMode == "1")
             {
                 timerAutoTest.Enabled = false;
-
                 if (m_timer_WatchDog != null)
                 {
                     m_timer_WatchDog.Dispose();
@@ -398,8 +380,7 @@ namespace F002459
             }
             catch (Exception ex)
             {
-                string strr = ex.Message;
-                DisplayMessage("timerMonitorRun Exception:" + strr);
+                DisplayMessage("timerMonitorRun Exception:" + ex.Message);
                 return;
             }
             finally
@@ -430,8 +411,7 @@ namespace F002459
             }
             catch (Exception ex)
             {
-                string strr = ex.Message;
-                DisplayMessage("timerMonitorDeviceConnect Exception:" + strr);
+                DisplayMessage("timerMonitorDeviceConnect Exception:" + ex.Message);
                 return;
             }
             finally
@@ -539,12 +519,11 @@ namespace F002459
         {
             try
             {
-                USBEnumerator usbEnum = new USBEnumerator();
                 string strPhysicalAddress = "";
-                List<string> m_List_SN = new List<string>();
                 string strErrorMessage = "";
                 string strDeviceName = "";
-
+                USBEnumerator usbEnum = new USBEnumerator();          
+                List<string> m_List_SN = new List<string>();          
                 m_List_SN.Clear();
                 strPhysicalAddress = m_dic_UnitDevice[strPanel].PhysicalAddress;
                 strDeviceName = m_st_OptionData.ADBDeviceName;
@@ -669,8 +648,7 @@ namespace F002459
             }
             catch (Exception ex)
             {
-                string strr = ex.Message;
-                DisplayMessage("Monitor device connected Exception:" + strr);
+                DisplayMessage("Monitor device connected Exception:" + ex.Message);
                 return false;
             }
 
@@ -743,7 +721,6 @@ namespace F002459
             try
             {
                 strErrorMessage = "";
-
                 string strDeviceName = "";
                 string strPhysicalAddress = "";
                 USBEnumerator usbEnum = new USBEnumerator();
@@ -1139,18 +1116,21 @@ namespace F002459
                 // Remark: WorkOrder sometimes maybe not written in property, get from scansheet.
                 if (bRes == true)
                 {
-                    bRes = TestGetWorkOrder(strPanel, ref strErrorMessage);
-                    if (bRes == false)
+                    if (m_st_OptionData.MES_Enable == "1")
                     {
-                        bUpdateMDCS = false;
-                        bRes = false;
-                        strErrorMessage = "Failed to get WorkOrder property." + strErrorMessage;
-                    }
-                    else
-                    {
-                        bUpdateMDCS = true;
-                        bRes = true;
-                    }
+                        bRes = TestGetWorkOrder(strPanel, ref strErrorMessage);
+                        if (bRes == false)
+                        {
+                            bUpdateMDCS = false;
+                            bRes = false;
+                            strErrorMessage = "Failed to get WorkOrder property." + strErrorMessage;
+                        }
+                        else
+                        {
+                            bUpdateMDCS = true;
+                            bRes = true;
+                        }
+                    }        
                 }
 
                 #endregion
@@ -1159,18 +1139,21 @@ namespace F002459
 
                 if (bRes == true)
                 {
-                    bRes = TestGetEID(strPanel, ref strErrorMessage);
-                    if (bRes == false)
+                    if (m_st_OptionData.MES_Enable == "1")
                     {
-                        bUpdateMDCS = false;
-                        bRes = false;
-                        strErrorMessage = "Failed to get EID property." + strErrorMessage;
-                    }
-                    else
-                    {
-                        bUpdateMDCS = true;
-                        bRes = true;
-                    }
+                        bRes = TestGetEID(strPanel, ref strErrorMessage);
+                        if (bRes == false)
+                        {
+                            bUpdateMDCS = false;
+                            bRes = false;
+                            strErrorMessage = "Failed to get EID property." + strErrorMessage;
+                        }
+                        else
+                        {
+                            bUpdateMDCS = true;
+                            bRes = true;
+                        }
+                    }            
                 }
 
                 #endregion
@@ -3608,7 +3591,8 @@ namespace F002459
                         if (bRunRes == false)
                         {
                             DisplayMessage("Panel:" + strPanel + " MonitorDevice Fail." + strErrorMessage);
-                            this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Monitor Device Fail."); });
+                            this.Invoke((MethodInvoker)delegate { ClearUnitLog(strPanel); });
+                            this.Invoke((MethodInvoker)delegate { DisplayUnitLog(strPanel, "Monitor Device fail, Can't Connect Device."); });
                             m_dic_TestStatus[strPanel] = false;
                             bRunRes = false;
                             //return;
@@ -3624,7 +3608,6 @@ namespace F002459
                         #region STATUS_FAILED
 
                         this.Invoke((MethodInvoker)delegate { DisplayUnitStatus(strPanel, STATUS_FAILED, Color.Red); });
-
                         UnitDeviceInfo stUnit2 = m_dic_UnitDevice[strPanel];
                         stUnit2.Status = "F";
                         m_dic_UnitDevice[strPanel] = stUnit2;
@@ -3721,17 +3704,7 @@ namespace F002459
 
 
             #endregion
-
-            #region ScanMCF (Obsolete)
-
-            //DisplayMessage("Scan Sheet.");
-            //if (ScanMCF() == false)
-            //{
-            //    return false;
-            //}
-
-            #endregion
-
+  
             #region Option.ini
 
             DisplayMessage("Read Option.ini file.");
@@ -3773,37 +3746,6 @@ namespace F002459
                 DisplayMessage("Failed to read setup.ini file." + strErrorMessage);
                 return false;
             }
-
-            #endregion
-
-            #region ScanMES (Obsolete)
-
-            //if (m_st_OptionData.MES_Enable == "1")
-            //{
-            //    DisplayMessage("MES input.");
-            //    if (ScanMES() == false)
-            //    {
-            //        DisplayMessage("Failed to MES input.");
-            //        return false;
-            //    }
-            //    DisplayMessage("EID:" + m_st_MESData.EID);
-            //    DisplayMessage("WorkOrder:" + m_st_MESData.WorkOrder);
-            //}
-
-            #endregion
-
-            #region Check MES Data (Obsolete)
-
-            //if (m_st_OptionData.MES_Enable == "1")
-            //{
-            //    DisplayMessage("MES check data.");
-
-            //    if (MESCheckData(ref strErrorMessage) == false)
-            //    {
-            //        DisplayMessage("Failed to MES check data." + strErrorMessage);
-            //        return false;
-            //    }
-            //}
 
             #endregion
 
@@ -5277,7 +5219,6 @@ namespace F002459
         #endregion       
 
         //#endregion
-
 
     }
 }

@@ -10,6 +10,7 @@ using System.Windows.Forms;
  * REV  AUTHOR       DATE        COMMENTS
  *
  * A    CalvinXie    2022/08/14  First version. 
+ * A1   CalvinXie    2022/02/23  When MES Enable, Read WorkOrder and EID.
  * 
  *******************************************************************************/
 
@@ -28,7 +29,7 @@ namespace F002459
         static void Main()
         {
             g_str_ToolNumber = "F002459";
-            g_str_ToolRev = "A";
+            g_str_ToolRev = "A1";
 
             mutex = new System.Threading.Mutex(false, "F002459 QCNBackup Fixture");
 
@@ -49,7 +50,6 @@ namespace F002459
             {
                 MessageBox.Show("F002459 Already Running !!!");
             }
-
         }
     }
 }

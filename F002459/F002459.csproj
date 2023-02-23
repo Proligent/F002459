@@ -229,6 +229,9 @@
     <None Include="EDA56\UL_Option.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="EDA5S\EDA5S_Option.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="HWSerNumEmulation.reg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -275,9 +278,7 @@
   <ItemGroup>
     <None Include="Resources\normal_16.png" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="EDA5S\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5">
       <Visible>False</Visible>
